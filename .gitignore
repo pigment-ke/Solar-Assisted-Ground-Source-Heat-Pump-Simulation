@@ -1,0 +1,85 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Office temp files
+~$*.docx
+~$*.xlsx
+~$*.doc
+~$*.xls
+~$*.rtf
+
+# EnergyPlus output files (keep IDF, exclude large outputs)
+output/eplusout.*
+!output/eplusout.end
+!output/eplusout.err
+
+# Large simulation logs (keep only recent ones)
+results/simulation_log_*.txt
+!results/simulation_log_*.txt
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Logs
+*.log
+
+# Data files (optional - uncomment if you want to exclude)
+# *.csv
+# *.xlsx
+# *.xls
+# *.rtf
+
+# Keep important project files
+!README.md
+!PROJECT_SUMMARY.md
+!Bahrain_Villa_SA_GSHP.idf
+!python_scripts/
+!results/
+!weather/
+!Life_Cycle_Cost_*.xlsx

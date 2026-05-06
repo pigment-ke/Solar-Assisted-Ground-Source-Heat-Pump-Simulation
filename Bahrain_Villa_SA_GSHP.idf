@@ -1,0 +1,632 @@
+! SA-GSHP Bahrain Villa - FIXED FOR ENERGYPLUS 26.1
+! 300 m2 residential villa, Manama, Bahrain
+! EN8914 Final Year Project
+! Group: Ahmed Batoog, Eissa Alshammary, Jasim Helal, Ahmed Almomen
+! Fixed: May 2026
+
+Version,26.1;
+
+! ==============================================================================
+! SIMULATION CONTROL
+! ==============================================================================
+SimulationControl,
+    Yes,                     !- Do Zone Sizing Calculation
+    Yes,                     !- Do System Sizing Calculation
+    No,                      !- Do Plant Sizing Calculation
+    Yes,                     !- Run Simulation for Sizing Periods
+    Yes,                     !- Run Simulation for Weather File Run Periods
+    No,                      !- Do HVAC Sizing Simulation for Sizing Periods
+    1;                       !- Maximum Number of HVAC Sizing Simulation Passes
+
+Building,
+    Bahrain Villa,           !- Name
+    0,                       !- North Axis {deg}
+    City,                    !- Terrain
+    0.04,                    !- Loads Convergence Tolerance Value
+    0.4,                     !- Temperature Convergence Tolerance Value {deltaC}
+    FullInteriorAndExterior, !- Solar Distribution
+    25,                      !- Maximum Number of Warmup Days
+    6;                       !- Minimum Number of Warmup Days
+
+ShadowCalculation,
+    PolygonClipping,         !- Shading Calculation Method
+    Periodic,                !- Shading Calculation Update Frequency Method
+    20;                      !- Shading Calculation Update Frequency
+
+Timestep,
+    6;                       !- Number of Timesteps per Hour
+
+GlobalGeometryRules,
+    UpperLeftCorner,         !- Starting Vertex Position
+    CounterClockWise,        !- Vertex Entry Direction
+    World;                   !- Coordinate System
+
+! ==============================================================================
+! LOCATION AND RUN PERIOD
+! ==============================================================================
+Site:Location,
+    Manama_Bahrain,          !- Name
+    26.23,                   !- Latitude {deg}
+    50.57,                   !- Longitude {deg}
+    3.0,                     !- Time Zone {hr}
+    2.0;                     !- Elevation {m}
+
+! Weather file specified via command line -w flag
+
+RunPeriod,
+    Full Year,               !- Name
+    1,                       !- Begin Month
+    1,                       !- Begin Day of Month
+    ,                        !- Begin Year
+    12,                      !- End Month
+    31,                      !- End Day of Month
+    ,                        !- End Year
+    Sunday,                  !- Day of Week for Start Day
+    Yes,                     !- Use Weather File Holidays and Special Days
+    Yes,                     !- Use Weather File Daylight Saving Period
+    No,                      !- Apply Weekend Holiday Rule
+    Yes,                     !- Use Weather File Rain Indicators
+    Yes;                     !- Use Weather File Snow Indicators
+
+! ==============================================================================
+! MATERIALS
+! ==============================================================================
+Material,
+    Plaster_20mm,
+    Rough,
+    0.02,
+    0.72,
+    1850,
+    840,
+    0.9,
+    0.7,
+    0.7;
+
+Material,
+    Concrete_200mm,
+    Rough,
+    0.20,
+    1.4,
+    2300,
+    840,
+    0.9,
+    0.6,
+    0.6;
+
+Material,
+    Insulation_50mm,
+    Rough,
+    0.05,
+    0.035,
+    30,
+    840,
+    0.9,
+    0.5,
+    0.5;
+
+Material,
+    Concrete_Roof_150mm,
+    Rough,
+    0.15,
+    1.4,
+    2300,
+    840,
+    0.9,
+    0.6,
+    0.6;
+
+Material,
+    Roof_Insulation_75mm,
+    Rough,
+    0.075,
+    0.035,
+    30,
+    840,
+    0.9,
+    0.5,
+    0.5;
+
+Material,
+    Screed_50mm,
+    Rough,
+    0.05,
+    1.4,
+    2300,
+    840,
+    0.9,
+    0.6,
+    0.6;
+
+Material,
+    Floor_Tile_10mm,
+    Smooth,
+    0.01,
+    1.5,
+    2500,
+    800,
+    0.9,
+    0.5,
+    0.5;
+
+Material,
+    Floor_Concrete_100mm,
+    Rough,
+    0.10,
+    1.4,
+    2300,
+    840,
+    0.9,
+    0.6,
+    0.6;
+
+Material,
+    Floor_Insulation_50mm,
+    Rough,
+    0.05,
+    0.035,
+    30,
+    840,
+    0.9,
+    0.5,
+    0.5;
+
+! ==============================================================================
+! CONSTRUCTIONS
+! ==============================================================================
+Construction,
+    Wall_External,
+    Plaster_20mm,
+    Concrete_200mm,
+    Insulation_50mm,
+    Plaster_20mm;
+
+Construction,
+    Roof_External,
+    Concrete_Roof_150mm,
+    Roof_Insulation_75mm,
+    Screed_50mm;
+
+Construction,
+    Floor_Internal,
+    Floor_Tile_10mm,
+    Floor_Concrete_100mm,
+    Floor_Insulation_50mm;
+
+WindowMaterial:SimpleGlazingSystem,
+    Glazing_Double_LowE,
+    1.8,
+    0.25,
+    0.65;
+
+Construction,
+    Window_Construction,
+    Glazing_Double_LowE;
+
+! ==============================================================================
+! ZONE
+! ==============================================================================
+Zone,
+    Villa_Living,            !- Name
+    0,                       !- Direction of Relative North {deg}
+    0,                       !- X Origin {m}
+    0,                       !- Y Origin {m}
+    0,                       !- Z Origin {m}
+    1,                       !- Type
+    1,                       !- Multiplier
+    autocalculate,           !- Ceiling Height {m}
+    autocalculate,           !- Volume {m3}
+    autocalculate;           !- Floor Area {m2}
+
+! ==============================================================================
+! BUILDING SURFACES
+! ==============================================================================
+BuildingSurface:Detailed,
+    Villa_Floor,
+    Floor,
+    Floor_Internal,
+    Villa_Living,
+    ,
+    Ground,
+    ,
+    NoSun,
+    NoWind,
+    0,
+    4,
+    0,0,0,
+    20,0,0,
+    20,15,0,
+    0,15,0;
+
+BuildingSurface:Detailed,
+    Villa_Roof,
+    Roof,
+    Roof_External,
+    Villa_Living,
+    ,
+    Outdoors,
+    ,
+    SunExposed,
+    WindExposed,
+    0,
+    4,
+    0,15,3,
+    0,0,3,
+    20,0,3,
+    20,15,3;
+
+BuildingSurface:Detailed,
+    Villa_North_Wall,
+    Wall,
+    Wall_External,
+    Villa_Living,
+    ,
+    Outdoors,
+    ,
+    SunExposed,
+    WindExposed,
+    0.5,
+    4,
+    0,15,3,
+    0,15,0,
+    20,15,0,
+    20,15,3;
+
+BuildingSurface:Detailed,
+    Villa_South_Wall,
+    Wall,
+    Wall_External,
+    Villa_Living,
+    ,
+    Outdoors,
+    ,
+    SunExposed,
+    WindExposed,
+    0.5,
+    4,
+    0,0,3,
+    0,0,0,
+    20,0,0,
+    20,0,3;
+
+BuildingSurface:Detailed,
+    Villa_East_Wall,
+    Wall,
+    Wall_External,
+    Villa_Living,
+    ,
+    Outdoors,
+    ,
+    SunExposed,
+    WindExposed,
+    0.5,
+    4,
+    20,0,3,
+    20,0,0,
+    20,15,0,
+    20,15,3;
+
+BuildingSurface:Detailed,
+    Villa_West_Wall,
+    Wall,
+    Wall_External,
+    Villa_Living,
+    ,
+    Outdoors,
+    ,
+    SunExposed,
+    WindExposed,
+    0.5,
+    4,
+    0,15,3,
+    0,15,0,
+    0,0,0,
+    0,0,3;
+
+! ==============================================================================
+! WINDOWS
+! ==============================================================================
+FenestrationSurface:Detailed,
+    Villa_South_Window,
+    Window,
+    Window_Construction,
+    Villa_South_Wall,
+    ,
+    autocalculate,
+    ,
+    1,
+    4,
+    6,0,2.4,
+    6,0,0.6,
+    14,0,0.6,
+    14,0,2.4;
+
+FenestrationSurface:Detailed,
+    Villa_East_Window,
+    Window,
+    Window_Construction,
+    Villa_East_Wall,
+    ,
+    autocalculate,
+    ,
+    1,
+    4,
+    20,3,2.4,
+    20,3,0.6,
+    20,12,0.6,
+    20,12,2.4;
+
+! ==============================================================================
+! INTERNAL LOADS
+! ==============================================================================
+People,
+    Villa_Occupancy,
+    Villa_Living,
+    Occupancy_Schedule,
+    People,
+    5,
+    ,
+    ,
+    0.3,
+    ,
+    Activity_Schedule;
+
+Lights,
+    Villa_Lighting,
+    Villa_Living,
+    Lighting_Schedule,
+    Watts/Area,
+    ,
+    8,
+    ,
+    0,
+    0.59,
+    0.2,
+    0,
+    GeneralLights;
+
+ElectricEquipment,
+    Villa_Equipment,
+    Villa_Living,
+    Equipment_Schedule,
+    EquipmentLevel,
+    1500,
+    ,
+    ,
+    0,
+    0.3,
+    0;
+
+! ==============================================================================
+! SCHEDULE TYPE LIMITS
+! ==============================================================================
+ScheduleTypeLimits,
+    Fraction,
+    0,
+    1,
+    Continuous;
+
+ScheduleTypeLimits,
+    Any_Number,
+    -100,
+    100,
+    Continuous;
+
+ScheduleTypeLimits,
+    Temperature,
+    -60,
+    200,
+    Continuous;
+
+! ==============================================================================
+! SCHEDULES
+! ==============================================================================
+Schedule:Compact,
+    Occupancy_Schedule,
+    Fraction,
+    Through: 12/31,
+    For: WeekDays,
+    Until: 7:00, 0.8,
+    Until: 9:00, 0.2,
+    Until: 17:00, 0.1,
+    Until: 22:00, 0.9,
+    Until: 24:00, 0.7,
+    For: Weekends,
+    Until: 9:00, 0.9,
+    Until: 22:00, 0.7,
+    Until: 24:00, 0.8,
+    For: Holidays,
+    Until: 24:00, 0.9,
+    For: SummerDesignDay,
+    Until: 24:00, 0.5,
+    For: WinterDesignDay,
+    Until: 24:00, 0.5,
+    For: CustomDay1,
+    Until: 24:00, 0.5,
+    For: CustomDay2,
+    Until: 24:00, 0.5;
+
+Schedule:Compact,
+    Lighting_Schedule,
+    Fraction,
+    Through: 12/31,
+    For: AllDays,
+    Until: 7:00, 0.1,
+    Until: 18:00, 0.0,
+    Until: 23:00, 0.8,
+    Until: 24:00, 0.3;
+
+Schedule:Compact,
+    Equipment_Schedule,
+    Fraction,
+    Through: 12/31,
+    For: AllDays,
+    Until: 6:00, 0.3,
+    Until: 9:00, 0.6,
+    Until: 18:00, 0.8,
+    Until: 24:00, 0.5;
+
+Schedule:Compact,
+    Activity_Schedule,
+    Any_Number,
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 100;
+
+Schedule:Compact,
+    Cooling_Setpoint,
+    Temperature,
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 24;
+
+Schedule:Compact,
+    Heating_Setpoint,
+    Temperature,
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 18;
+
+! FIX: Required control type schedule (value 4 = DualSetpoint)
+Schedule:Compact,
+    Thermostat_Control_Schedule,
+    Any_Number,
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 4;
+
+! ==============================================================================
+! SIZING
+! ==============================================================================
+Sizing:Parameters,
+    1.2,
+    1.2;
+
+! Sizing periods removed to avoid field structure errors
+
+! ==============================================================================
+! THERMOSTAT - FIX: Correct ZoneControl:Thermostat syntax for EP 26.1
+! Requires: Name, Zone, Control Type Schedule, Control Object Type, Control Name
+! ==============================================================================
+ThermostatSetpoint:DualSetpoint,
+    Thermostat_DualSetpoint,
+    Heating_Setpoint,
+    Cooling_Setpoint;
+
+ZoneControl:Thermostat,
+    Villa_Thermostat_Control,
+    Villa_Living,
+    Thermostat_Control_Schedule,
+    ThermostatSetpoint:DualSetpoint,
+    Thermostat_DualSetpoint;
+
+! ==============================================================================
+! HVAC - IDEAL LOADS
+! FIX: Removed excess/invalid fields from IdealLoadsAirSystem
+! FIX: Removed duplicate NodeList, supply node name consistent throughout
+! ==============================================================================
+ZoneHVAC:IdealLoadsAirSystem,
+    Villa_Ideal_System,      !- Name
+    ,                        !- Availability Schedule Name
+    Villa_Living_Supply,     !- Zone Supply Air Node Name
+    ,                        !- Zone Exhaust Air Node Name
+    ,                        !- System Inlet Air Node Name
+    50,                      !- Maximum Heating Supply Air Temperature {C}
+    13,                      !- Minimum Cooling Supply Air Temperature {C}
+    0.008,                   !- Maximum Heating Supply Air Humidity Ratio {kgWater/kgDryAir}
+    0.008,                   !- Maximum Cooling Supply Air Humidity Ratio {kgWater/kgDryAir}
+    NoLimit,                 !- Heating Limit
+    ,                        !- Maximum Heating Air Flow Rate {m3/s}
+    ,                        !- Maximum Sensible Heat Capacity {W}
+    NoLimit,                 !- Cooling Limit
+    ,                        !- Maximum Cooling Air Flow Rate {m3/s}
+    ,                        !- Maximum Total Cooling Capacity {W}
+    ,                        !- Heating Availability Schedule Name
+    ,                        !- Cooling Availability Schedule Name
+    None,                    !- Dehumidification Control Type
+    ,                        !- Cooling Sensible Heat Ratio
+    None,                    !- Humidification Control Type
+    ,                        !- Design Specification Outdoor Air Object Name
+    ,                        !- Outdoor Air Inlet Node Name
+    ,                        !- Demand Controlled Ventilation Type
+    ,                        !- Outdoor Air Economizer Type
+    ,                        !- Heat Recovery Type
+    ,                        !- Sensible Heat Recovery Effectiveness
+    ;                        !- Latent Heat Recovery Effectiveness
+
+ZoneHVAC:EquipmentList,
+    Villa_Equipment_List,
+    SequentialLoad,
+    ZoneHVAC:IdealLoadsAirSystem,
+    Villa_Ideal_System,
+    1,
+    1;
+
+ZoneHVAC:EquipmentConnections,
+    Villa_Living,            !- Zone Name
+    Villa_Equipment_List,    !- Zone Conditioning Equipment List Name
+    Villa_Living_Supply,     !- Zone Air Inlet Node or NodeList Name
+    ,                        !- Zone Air Exhaust Node or NodeList Name
+    Villa_Living_Node,       !- Zone Air Node Name
+    Villa_Living_Return;     !- Zone Return Air Node or NodeList Name
+
+OutdoorAir:Node,
+    Villa_Outdoor_Air;
+
+! ==============================================================================
+! OUTPUT VARIABLES
+! ==============================================================================
+Output:Variable,
+    Villa_Living,
+    Zone Ideal Loads Supply Air Total Cooling Energy,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Ideal Loads Zone Total Cooling Energy,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Mean Air Temperature,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Air Temperature,
+    Hourly;
+
+Output:Variable,
+    *,
+    Site Outdoor Air Drybulb Temperature,
+    Hourly;
+
+Output:Variable,
+    *,
+    Site Diffuse Solar Radiation Rate per Area,
+    Hourly;
+
+Output:Variable,
+    *,
+    Site Direct Solar Radiation Rate per Area,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Thermostat Cooling Setpoint Temperature,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Ideal Loads Supply Air Mass Flow Rate,
+    Hourly;
+
+Output:Table:SummaryReports,
+    AllSummary;
+
+! FIX: OutputControl:Table:Style takes only ONE field in EP 26.1
+OutputControl:Table:Style,
+    HTML;
+
+! ==============================================================================
+! END OF FILE
+! ==============================================================================
