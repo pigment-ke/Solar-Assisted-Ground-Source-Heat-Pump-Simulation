@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SA-GSHP Bahrain Villa Simulation
 
 A comprehensive techno-economic feasibility study of Solar-Assisted Ground Source Heat Pump (SA-GSHP) systems for residential applications in hot climate regions, specifically for a 300 m² villa in Manama, Bahrain.
@@ -501,3 +502,7 @@ This project is part of academic research on renewable energy systems for hot cl
 ## 🏆 Acknowledgments
 
 This research demonstrates the integration of building energy simulation with ground thermal modeling for comprehensive SA-GSHP feasibility analysis in challenging climate conditions.
+=======
+# Solar-Assisted-Ground-Source-Heat-Pump-Simulation
+This project demonstrates the technical and economic viability of SA-GSHP systems through integrated EnergyPlus building simulation and Python-based ground thermal modeling. The study validates system performance over 20 years with solar regeneration to maintain ground temperature sustainability.
+>>>>>>> 80a6ef961c8bce5079088158aa76bafe9af94dd2
