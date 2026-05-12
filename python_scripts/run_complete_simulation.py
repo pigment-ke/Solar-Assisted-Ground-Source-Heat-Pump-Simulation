@@ -316,7 +316,8 @@ def main():
                 else:
                     # Run Python script
                     log_verbose(f"Executing Python script: {step_func}")
-                    result = subprocess.run([sys.executable, step_func], 
+                    script_path = os.path.join(os.path.dirname(__file__), step_func)
+                    result = subprocess.run([sys.executable, script_path], 
                                           capture_output=True, text=True, cwd='.')
                     
                     # Write stdout to log
