@@ -72,10 +72,10 @@ def check_and_install_requirements():
         return True
 
 def find_energyplus_path():
-    """Find EnergyPlus installation path using multiple methods"""
+    """Find EnergyPlus installation path using multiple methods (cross-platform)"""
     log_verbose("Searching for EnergyPlus installation...")
     
-    # Method 1: Check if energyplus is in PATH
+    # Method 1: Check if energyplus is in PATH (works on all platforms)
     try:
         result = subprocess.run(["energyplus", "--version"], 
                               capture_output=True, text=True, timeout=10)
@@ -85,38 +85,94 @@ def find_energyplus_path():
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
         pass
     
-    # Method 2: Check common installation paths
-    common_paths = [
-        r"C:\EnergyPlusV26-1-0",
-        r"C:\Program Files\EnergyPlusV26-1-0",
-        r"C:\Program Files (x86)\EnergyPlusV26-1-0",
-        r"D:\EnergyPlusV26-1-0",
-        os.path.expanduser("~/EnergyPlusV26-1-0"),
-    ]
+    # Method 2: Check platform-specific installation paths
+    import platform
+    system = platform.system().lower()
     
+    if system == "windows":
+        # Windows-specific paths
+        common_paths = [
+            r"C:\EnergyPlusV26-1-0",
+            r"C:\Program Files\EnergyPlusV26-1-0",
+            r"C:\Program Files (x86)\EnergyPlusV26-1-0",
+            r"D:\EnergyPlusV26-1-0",
+            os.path.expanduser("~/EnergyPlusV26-1-0"),
+        ]
+        executable_name = "energyplus.exe"
+        
+    elif system == "darwin":  # macOS
+        common_paths = [
+            "/Applications/EnergyPlus-26-1-0",
+            "/usr/local/EnergyPlus-26-1-0",
+            "/opt/EnergyPlus-26-1-0",
+            os.path.expanduser("~/Applications/EnergyPlus-26-1-0"),
+        ]
+        executable_name = "energyplus"
+        
+    elif system == "linux":
+        common_paths = [
+            "/usr/local/EnergyPlus-26-1-0",
+            "/opt/EnergyPlus-26-1-0",
+            "/usr/EnergyPlus-26-1-0",
+            "/home/" + os.getenv('USER', '') + "/EnergyPlus-26-1-0",
+            os.path.expanduser("~/EnergyPlus-26-1-0"),
+        ]
+        executable_name = "energyplus"
+        
+    else:
+        log_verbose(f"Unsupported operating system: {system}", "WARNING")
+        common_paths = []
+        executable_name = "energyplus"
+    
+    # Search common installation paths
     for path in common_paths:
         if os.path.exists(path):
-            energyplus_exe = os.path.join(path, "energyplus.exe")
+            energyplus_exe = os.path.join(path, executable_name)
             if os.path.exists(energyplus_exe):
                 log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
                 return energyplus_exe
     
-    # Method 3: Search in Program Files
+    # Method 3: Search in platform-specific directories
     try:
-        program_files = [r"C:\Program Files", r"C:\Program Files (x86)"]
-        for prog_dir in program_files:
-            if os.path.exists(prog_dir):
-                for item in os.listdir(prog_dir):
+        if system == "windows":
+            program_files = [r"C:\Program Files", r"C:\Program Files (x86)"]
+            for prog_dir in program_files:
+                if os.path.exists(prog_dir):
+                    for item in os.listdir(prog_dir):
+                        if "EnergyPlus" in item:
+                            energyplus_path = os.path.join(prog_dir, item)
+                            energyplus_exe = os.path.join(energyplus_path, "energyplus.exe")
+                            if os.path.exists(energyplus_exe):
+                                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                                return energyplus_exe
+        
+        elif system == "darwin":
+            applications_dir = "/Applications"
+            if os.path.exists(applications_dir):
+                for item in os.listdir(applications_dir):
                     if "EnergyPlus" in item:
-                        energyplus_path = os.path.join(prog_dir, item)
-                        energyplus_exe = os.path.join(energyplus_path, "energyplus.exe")
+                        energyplus_path = os.path.join(applications_dir, item)
+                        energyplus_exe = os.path.join(energyplus_path, "energyplus")
                         if os.path.exists(energyplus_exe):
                             log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
                             return energyplus_exe
+        
+        elif system == "linux":
+            search_dirs = ["/usr/local", "/opt", "/usr"]
+            for search_dir in search_dirs:
+                if os.path.exists(search_dir):
+                    for item in os.listdir(search_dir):
+                        if "EnergyPlus" in item:
+                            energyplus_path = os.path.join(search_dir, item)
+                            energyplus_exe = os.path.join(energyplus_path, "energyplus")
+                            if os.path.exists(energyplus_exe):
+                                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                                return energyplus_exe
+                                
     except Exception as e:
-        log_verbose(f"Error searching Program Files: {e}", "WARNING")
+        log_verbose(f"Error searching directories: {e}", "WARNING")
     
-    log_verbose("EnergyPlus not found - will use synthetic loads", "WARNING")
+    log_verbose(f"EnergyPlus not found on {system} - will use synthetic loads", "WARNING")
     return None
 
 def run_energyplus():
