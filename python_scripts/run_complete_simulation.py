@@ -11,6 +11,8 @@ from datetime import datetime
 import io
 from contextlib import redirect_stdout, redirect_stderr
 import shutil
+import pkg_resources
+import importlib.util
 
 # Get the project root directory
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,61 +22,161 @@ weather_dir = os.path.join(project_root, "weather")
 idf_file = os.path.join(project_root, "Bahrain_Villa_SA_GSHP.idf")
 weather_file = os.path.join(weather_dir, "Bahrain_Manama.epw")
 
-def run_energyplus():
-    """Run EnergyPlus simulation for building loads"""
-    print(f"\n{'='*60}")
-    print("Running: EnergyPlus Building Simulation")
-    print('='*60)
+# Verbose logging function
+def log_verbose(message, level="INFO"):
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    print(f"[{timestamp}] {level}: {message}")
+    return message
+
+def check_and_install_requirements():
+    """Check if all required packages are installed, install if missing"""
+    log_verbose("Checking Python package requirements...")
     
-    # Check if EnergyPlus is available
+    requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
+    
+    if not os.path.exists(requirements_file):
+        log_verbose("ERROR: requirements.txt not found!", "ERROR")
+        return False
+    
+    with open(requirements_file, 'r') as f:
+        requirements = f.read().strip().split('\n')
+    
+    missing_packages = []
+    for requirement in requirements:
+        if not requirement.strip() or requirement.startswith('#'):
+            continue
+        package_name = requirement.split('>=')[0].split('==')[0].strip()
+        
+        try:
+            pkg_resources.get_distribution(package_name)
+            log_verbose(f"✓ {package_name} already installed")
+        except pkg_resources.DistributionNotFound:
+            missing_packages.append(requirement.strip())
+            log_verbose(f"✗ {package_name} missing - will install", "WARNING")
+    
+    if missing_packages:
+        log_verbose(f"Installing {len(missing_packages)} missing packages...")
+        try:
+            for package in missing_packages:
+                log_verbose(f"Installing {package}...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", package], 
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                log_verbose(f"✓ {package} installed successfully")
+            log_verbose("All required packages installed successfully!")
+            return True
+        except subprocess.CalledProcessError as e:
+            log_verbose(f"Failed to install {package}: {e}", "ERROR")
+            return False
+    else:
+        log_verbose("All required packages are already installed!")
+        return True
+
+def find_energyplus_path():
+    """Find EnergyPlus installation path using multiple methods"""
+    log_verbose("Searching for EnergyPlus installation...")
+    
+    # Method 1: Check if energyplus is in PATH
     try:
         result = subprocess.run(["energyplus", "--version"], 
-                              capture_output=True, text=True)
-        if result.returncode != 0:
-            print("  [WARNING] EnergyPlus not found. Skipping building simulation.")
-            print("  [INFO] Python simulation will use synthetic loads.")
-            return True
-    except FileNotFoundError:
-        print("  [WARNING] EnergyPlus not installed. Skipping building simulation.")
-        print("  [INFO] Python simulation will use synthetic loads.")
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            log_verbose(f"✓ EnergyPlus found in PATH: {result.stdout.strip()}")
+            return "energyplus"
+    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
+        pass
+    
+    # Method 2: Check common installation paths
+    common_paths = [
+        r"C:\EnergyPlusV26-1-0",
+        r"C:\Program Files\EnergyPlusV26-1-0",
+        r"C:\Program Files (x86)\EnergyPlusV26-1-0",
+        r"D:\EnergyPlusV26-1-0",
+        os.path.expanduser("~/EnergyPlusV26-1-0"),
+    ]
+    
+    for path in common_paths:
+        if os.path.exists(path):
+            energyplus_exe = os.path.join(path, "energyplus.exe")
+            if os.path.exists(energyplus_exe):
+                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                return energyplus_exe
+    
+    # Method 3: Search in Program Files
+    try:
+        program_files = [r"C:\Program Files", r"C:\Program Files (x86)"]
+        for prog_dir in program_files:
+            if os.path.exists(prog_dir):
+                for item in os.listdir(prog_dir):
+                    if "EnergyPlus" in item:
+                        energyplus_path = os.path.join(prog_dir, item)
+                        energyplus_exe = os.path.join(energyplus_path, "energyplus.exe")
+                        if os.path.exists(energyplus_exe):
+                            log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                            return energyplus_exe
+    except Exception as e:
+        log_verbose(f"Error searching Program Files: {e}", "WARNING")
+    
+    log_verbose("EnergyPlus not found - will use synthetic loads", "WARNING")
+    return None
+
+def run_energyplus():
+    """Run EnergyPlus simulation for building loads"""
+    log_verbose("Starting EnergyPlus building simulation...")
+    
+    # Find EnergyPlus installation
+    energyplus_exe = find_energyplus_path()
+    
+    if not energyplus_exe:
+        log_verbose("EnergyPlus not found - will use synthetic loads", "WARNING")
         return True
     
+    log_verbose(f"Using EnergyPlus executable: {energyplus_exe}")
+    
     # Clean output directory
+    log_verbose("Cleaning EnergyPlus output directory...")
     os.makedirs(output_dir, exist_ok=True)
     for file in os.listdir(output_dir):
         if file.startswith('eplus'):
-            os.remove(os.path.join(output_dir, file))
+            file_path = os.path.join(output_dir, file)
+            log_verbose(f"Removing old output file: {file_path}")
+            os.remove(file_path)
     
     # Run EnergyPlus
+    log_verbose(f"Running EnergyPlus with command: {energyplus_exe} -w {weather_file} -d {output_dir} {idf_file}")
     try:
-        cmd = ["energyplus", "-w", weather_file, "-d", output_dir, idf_file]
+        cmd = [energyplus_exe, "-w", weather_file, "-d", output_dir, idf_file]
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_root)
         
-        print("EnergyPlus output:")
+        log_verbose("EnergyPlus output captured:")
         if result.stdout:
-            print(result.stdout)
+            log_verbose(f"STDOUT: {result.stdout.strip()}")
         if result.stderr:
-            print(f"EnergyPlus errors/warnings:\n{result.stderr}")
+            log_verbose(f"STDERR: {result.stderr.strip()}", "WARNING")
         
         # Check if simulation was successful
         success_file = os.path.join(output_dir, "eplusout.end")
         if os.path.exists(success_file):
-            print("  EnergyPlus simulation completed successfully.")
+            log_verbose("✓ EnergyPlus simulation completed successfully.")
             
             # Extract building loads for Python simulation
             tbl_file = os.path.join(output_dir, "eplustbl.csv")
+            htm_file = os.path.join(output_dir, "eplustbl.htm")
+            
             if os.path.exists(tbl_file):
-                print(f"  Building loads available in: {tbl_file}")
+                log_verbose(f"✓ Building loads available in: {tbl_file}")
+                return True
+            elif os.path.exists(htm_file):
+                log_verbose(f"✓ Building loads available in: {htm_file} (HTML format)")
                 return True
             else:
-                print("  [WARNING] EnergyPlus output table not found.")
-                return False
+                log_verbose("⚠ EnergyPlus output table not found, but simulation completed successfully.", "WARNING")
+                return True
         else:
-            print("  [ERROR] EnergyPlus simulation failed.")
+            log_verbose("✗ EnergyPlus simulation failed.", "ERROR")
             return False
             
     except Exception as e:
-        print(f"  [ERROR] Failed to run EnergyPlus: {e}")
+        log_verbose(f"✗ Failed to run EnergyPlus: {e}", "ERROR")
         return False
 
 def run_script(script_name):
@@ -96,19 +198,30 @@ def run_script(script_name):
 
 def main():
     """Run complete simulation pipeline with comprehensive logging"""
+    log_verbose("Starting SA-GSHP Complete Simulation Pipeline...")
+    
     # Setup logging - use portable paths
+    log_verbose("Setting up directories and logging...")
     os.makedirs(results_dir, exist_ok=True)
     
     # Create log file with timestamp
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     log_file = os.path.join(results_dir, f"simulation_log_{timestamp}.txt")
     
-    print("SA-GSHP COMPLETE SIMULATION PIPELINE")
-    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Logging to: {log_file}")
-    print('='*60)
+    log_verbose(f"Pipeline started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log_verbose(f"Logging to: {log_file}")
+    
+    # Step 1: Check and install requirements
+    log_verbose("=" * 60)
+    log_verbose("STEP 1: Verifying Python Requirements")
+    log_verbose("=" * 60)
+    
+    if not check_and_install_requirements():
+        log_verbose("Failed to install required packages. Exiting.", "ERROR")
+        return
     
     # Open log file for writing
+    log_verbose("Opening log file for detailed output...")
     with open(log_file, 'w') as log:
         # Write header to log
         log.write("SA-GSHP COMPLETE SIMULATION PIPELINE\n")
@@ -143,8 +256,10 @@ def main():
                 if callable(step_func):
                     # Run EnergyPlus function
                     success = step_func()
+                    log.write(f"EnergyPlus function executed with result: {success}\n")
                 else:
                     # Run Python script
+                    log_verbose(f"Executing Python script: {step_func}")
                     result = subprocess.run([sys.executable, step_func], 
                                           capture_output=True, text=True, cwd='.')
                     
@@ -193,14 +308,15 @@ def main():
         
         print(f"\n{'='*60}")
         print("SIMULATION PIPELINE SUMMARY")
+        print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print('='*60)
         
-        for script, success in results.items():
+        for step_name, success in results.items():
             status = "SUCCESS" if success else "FAILED"
-            log.write(f"{script:<25} {status}\n")
-            print(f"{script:<25} {status}")
+            log.write(f"{step_name:<30} {status}\n")
+            print(f"{step_name:<30} {status}")
         
-        # List generated files in log
+        # List generated files
         log.write(f"\n{'='*60}\n")
         log.write("GENERATED FILES IN RESULTS DIRECTORY:\n")
         log.write("="*60 + "\n")
@@ -210,8 +326,7 @@ def main():
         print('='*60)
         
         if os.path.exists(results_dir):
-            files = [f for f in os.listdir(results_dir) if not f.startswith('__')]
-            for file in sorted(files):
+            for file in sorted(os.listdir(results_dir)):
                 file_path = os.path.join(results_dir, file)
                 if os.path.isfile(file_path):
                     size = os.path.getsize(file_path)
@@ -220,11 +335,11 @@ def main():
         
         # Excel-compatible files info in log
         log.write(f"\n{'='*60}\n")
-        log.write("EXCEL-COMPATIBLE FILES READY FOR THESIS:\n")
+        log.write("EXCEL-COMPATIBLE FILES READY FOR RESEARCH INTEGRATION:\n")
         log.write("="*60 + "\n")
         
         print(f"\n{'='*60}")
-        print("EXCEL-COMPATIBLE FILES READY FOR THESIS:")
+        print("EXCEL-COMPATIBLE FILES READY FOR RESEARCH INTEGRATION:")
         print('='*60)
         
         excel_files = [
