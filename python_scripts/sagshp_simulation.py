@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 print("Loading building loads...")
 try:
-    loads_df = pd.read_csv("hourly_loads.csv")
+    loads_df = pd.read_csv(os.path.join(project_root, "hourly_loads.csv"))
     Q_building_kWh = loads_df["cooling_kW"].values
 except FileNotFoundError:
     print("  [WARNING] hourly_loads.csv not found. Using synthetic load profile.")
