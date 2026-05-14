@@ -1,33 +1,77 @@
 SA-GSHP COMPLETE SIMULATION PIPELINE
-Started: 2026-05-12 18:07:12
-Log File: C:\Users\pigme\Desktop\SAGSHP\results\simulation_log_20260512_180712.txt
+Started: 2026-05-14 13:09:58
+Log File: C:\Users\pigme\Desktop\SAGSHP\results\simulation_log_20260514_130957.txt
 ============================================================
 
 ============================================================
 Running: EnergyPlus Building Simulation
-Time: 18:07:12
+Time: 13:09:58
 ============================================================
 EnergyPlus function executed with result: True
 SUCCESS: EnergyPlus Building Simulation completed successfully
 
 ============================================================
+Running: hp_performance.py
+Time: 13:11:04
+============================================================
+STDOUT:
+HP COP table:
+ EWT_C  COP_cooling
+  25.0          7.0
+  25.5          6.9
+  26.0          6.8
+  26.5          6.7
+  27.0          6.6
+  27.5          6.5
+  28.0          6.4
+  28.5          6.3
+  29.0          6.2
+  29.5          6.1
+  30.0          6.0
+  30.5          5.9
+  31.0          5.8
+  31.5          5.7
+  32.0          5.6
+  32.5          5.5
+  33.0          5.4
+  33.5          5.3
+  34.0          5.2
+  34.5          5.1
+  35.0          5.0
+  35.5          4.9
+  36.0          4.8
+  36.5          4.7
+  37.0          4.6
+  37.5          4.5
+  38.0          4.4
+  38.5          4.3
+  39.0          4.2
+  39.5          4.1
+
+At UGT=30C: COP = 6.00
+At EWT=34C: COP = 5.20 (degraded)
+
+Return Code: 0
+Success: Yes
+SUCCESS: hp_performance.py completed successfully
+
+============================================================
 Running: sagshp_simulation.py
-Time: 18:07:17
+Time: 13:11:07
 ============================================================
 STDOUT:
 Loading building loads...
-  Peak cooling load: 25.0 kW
-  Annual cooling energy: 98357 kWh
-  [WARNING] hp_cop_table.csv not found. Using constant COP=6.0.
+  Peak cooling load: 6.5 kW
+  Annual cooling energy: 28837 kWh
 
 Running 20-year simulation...
 
 === YEAR 1 RESULTS ===
   Ground temp:          30.1C
-  HP COP:               6.00
-  System SCOP:          4.86
-  Annual cooling:       98,357.0 kWh
-  Total electricity:    20,249.0 kWh
+  HP COP:               5.98
+  System SCOP:          3.32
+  Annual cooling:       28,837.0 kWh
+  Total electricity:    8,679.0 kWh
 Results saved to: C:\Users\pigme\Desktop\SAGSHP\results\scop_annual.csv
 Saved: C:\Users\pigme\Desktop\SAGSHP\results\SCOP_Performance_Analysis.csv
 
@@ -37,11 +81,11 @@ SUCCESS: sagshp_simulation.py completed successfully
 
 ============================================================
 Running: borehole_sim.py
-Time: 18:07:21
+Time: 13:11:14
 ============================================================
 STDOUT:
 Borehole field: 4 boreholes x 100.0m = 400.0m total
-Peak heat rejection: 13.9 kW, Peak solar injection: 6.9 kW
+Peak heat rejection: 5.7 kW, Peak solar injection: 6.9 kW
 Calculating g-function (this may take 2-5 minutes)...
 G-function calculated.
 
@@ -59,20 +103,16 @@ SUCCESS: borehole_sim.py completed successfully
 
 ============================================================
 Running: lcc_analysis.py
-Time: 18:07:30
+Time: 13:11:30
 ============================================================
 STDOUT:
 === LCC ANALYSIS ===
-LCC ASHP: 15,544 BHD
-LCC SA-GSHP: 15,934 BHD
-NPV @ 0.030 BHD/kWh: -391 BHD
-NPV @ 0.040 BHD/kWh: 3,161 BHD
+Annual ASHP electricity: 11,535 kWh
+Annual SA-GSHP electricity: 8,679 kWh
+LCC ASHP @ 0.030 BHD/kWh: 8,629 BHD
+LCC SA-GSHP @ 0.030 BHD/kWh: 13,269 BHD
+NPV @ 0.030 BHD/kWh: -4,640 BHD
 Saved: C:\Users\pigme\Desktop\SAGSHP\results\Economic_Analysis_Results.csv
-=== LCC ANALYSIS ===
-LCC ASHP: 15,524 BHD
-LCC SA-GSHP: 15,921 BHD
-NPV @ 0.030 BHD/kWh: -397 BHD
-NPV @ 0.040 BHD/kWh: 3,142 BHD
 Saved: results/lcc_analysis.xlsx
 
 Return Code: 0
@@ -81,14 +121,14 @@ SUCCESS: lcc_analysis.py completed successfully
 
 ============================================================
 Running: co2_analysis.py
-Time: 18:07:32
+Time: 13:11:44
 ============================================================
 STDOUT:
 === CO2 EMISSION REDUCTION ===
-Annual ASHP CO2: 17,360 kg/yr
-Annual SA-GSHP CO2: 9,645 kg/yr
-NET LIFECYCLE REDUCTION: 173 tonnes CO2
-Water saving over 25 years: 5.25-8.75 million litres
+Annual ASHP CO2: 7,152 kg/yr
+Annual SA-GSHP CO2: 5,381 kg/yr
+NET LIFECYCLE REDUCTION: 24 tonnes CO2
+Water saving over 25 years: 2.16-3.60 million litres
 Saved: C:\Users\pigme\Desktop\SAGSHP\results\co2_summary.csv
 Saved: C:\Users\pigme\Desktop\SAGSHP\results\Environmental_Impact_Analysis.csv
 
@@ -98,18 +138,19 @@ SUCCESS: co2_analysis.py completed successfully
 
 ============================================================
 Running: validate_all.py
-Time: 18:07:33
+Time: 13:11:47
 ============================================================
 STDOUT:
 =================================================================
   SA-GSHP SIMULATION VALIDATION REPORT
 =================================================================
-SCOP (Year 1)                  Got:     4.86  Target:     4.50  FAIL
-Annual elec. SA-GSHP           Got: 20249.00  Target: 15556.00  FAIL
+Hourly load rows               Got:  8760.00  Target:  8760.00  PASS
+SCOP (Year 1)                  Got:     3.32  Target:     3.32  PASS
+Annual elec. SA-GSHP           Got:  8679.00  Target:  8679.00  PASS
 Ground drift (20yr)            Got:     0.80  Target:     0.80  PASS
 Ground drift unmanaged         Got:     4.20  Target:     4.20  PASS
 -----------------------------------------------------------------
-SOME CHECKS FAILED
+ALL CHECKS PASSED
 =================================================================
 
 Return Code: 0
@@ -118,9 +159,10 @@ SUCCESS: validate_all.py completed successfully
 
 ============================================================
 SIMULATION PIPELINE SUMMARY
-Completed: 2026-05-12 18:07:35
+Completed: 2026-05-14 13:11:50
 ============================================================
 EnergyPlus Building Simulation SUCCESS
+hp_performance.py              SUCCESS
 sagshp_simulation.py           SUCCESS
 borehole_sim.py                SUCCESS
 lcc_analysis.py                SUCCESS
@@ -130,27 +172,17 @@ validate_all.py                SUCCESS
 ============================================================
 GENERATED FILES IN RESULTS DIRECTORY:
 ============================================================
-Economic_Analysis_Results.csv  (1,327 bytes)
-Environmental_Impact_Analysis.csv (1,472 bytes)
-Ground_Temperature_Analysis.csv (1,210 bytes)
-SCOP_Performance_Analysis.csv  (1,202 bytes)
-co2_summary.csv                (88 bytes)
-ground_temp_20yr.csv           (831 bytes)
-ground_temp_20yr.png           (128,157 bytes)
-lcc_analysis.xlsx              (4,956 bytes)
-scop_annual.csv                (1,146 bytes)
-simulation_log_20260506_024340.txt (4,299 bytes)
-simulation_log_20260506_024425.txt (5,619 bytes)
-simulation_log_20260506_101702.txt (7,180 bytes)
-simulation_log_20260506_101754.txt (6,008 bytes)
-simulation_log_20260506_102329.txt (6,468 bytes)
-simulation_log_20260506_102513.txt (6,518 bytes)
-simulation_log_20260512_142126.txt (6,669 bytes)
-simulation_log_20260512_142840.txt (5,163 bytes)
-simulation_log_20260512_143050.txt (6,755 bytes)
-simulation_log_20260512_143330.txt (7,709 bytes)
-simulation_log_20260512_180453.txt (6,855 bytes)
-simulation_log_20260512_180712.txt (0 bytes)
+Economic_Analysis_Results.csv  (1,128 bytes)
+Environmental_Impact_Analysis.csv (1,528 bytes)
+Ground_Temperature_Analysis.csv (1,218 bytes)
+SCOP_Performance_Analysis.csv  (1,189 bytes)
+co2_summary.csv                (71 bytes)
+ground_temp_20yr.csv           (837 bytes)
+ground_temp_20yr.png           (128,012 bytes)
+lcc_analysis.xlsx              (5,028 bytes)
+scop_annual.csv                (1,117 bytes)
+simulation_log_20260514_124849.txt (7,308 bytes)
+simulation_log_20260514_130957.txt (0 bytes)
 
 ============================================================
 EXCEL-COMPATIBLE FILES READY FOR RESEARCH INTEGRATION:
@@ -167,5 +199,5 @@ Hybrid EnergyPlus + Python simulation completed successfully!
 All files are MS Excel compatible and ready for research integration!
 Results directory: C:\Users\pigme\Desktop\SAGSHP\results
 EnergyPlus outputs: C:\Users\pigme\Desktop\SAGSHP\output
-Complete log saved to: C:\Users\pigme\Desktop\SAGSHP\results\simulation_log_20260512_180712.txt
-Completed: 2026-05-12 18:07:35
+Complete log saved to: C:\Users\pigme\Desktop\SAGSHP\results\simulation_log_20260514_130957.txt
+Completed: 2026-05-14 13:11:50

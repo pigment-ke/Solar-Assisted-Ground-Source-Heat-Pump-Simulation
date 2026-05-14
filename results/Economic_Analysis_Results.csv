@@ -1,35 +1,32 @@
 Life Cycle Cost Analysis - SA-GSHP vs ASHP
-Generated: May 6, 2026
+Generated: 2026-05-14 13:11:43
 Analysis Period: 20 years
 Discount Rate: 3.5%
 
 SYSTEM COSTS - CAPITAL EXPENDITURE (CAPEX)
 Component,ASHP_Cost_BHD,SA-GSHP_Cost_BHD,Cost_Difference_BHD
-Heat Pump Unit,2000,2500,500
-Borehole Drilling,0,3500,3500
-HDPE Piping & Grouting,0,500,500
-Solar Thermal Collectors,0,1200,1200
-Installation & Controls,1000,1300,300
+Heat pump unit(s),2000,2500,500
+Borehole drilling (4x100m),0,3500,3500
+HDPE piping and grouting,0,500,500
+Solar thermal collectors,0,1200,1200
+Installation and controls,1000,1300,300
 TOTAL CAPITAL COST,3000,9000,6000
 
-ANNUAL OPERATING COSTS (OPEX)
-Cost Component,ASHP_Annual_BHD,SA-GSHP_Annual_BHD,Annual_Savings_BHD
-Electricity Consumption,504,279,225
-Maintenance Costs,50,25,25
-Water & Chemicals,0,15,-15
-TOTAL ANNUAL COST,554,319,235
+ENERGY INPUTS
+Metric,Value,Unit
+EnergyPlus cooling load,28837,kWh/year
+ASHP electricity baseline,11535,kWh/year
+SA-GSHP electricity,8679,kWh/year
 
 LIFE CYCLE COST RESULTS
-Scenario,Electricity_Tariff_BHD_kWh,ASHP_NPV_BHD,SA-GSHP_NPV_BHD,Net_Present_Value_BHD,Payback_Years
-Low Tariff,0.018,11080,10683,-397,25.5
-Base Tariff,0.025,15389,14842,-547,28.2
-Realistic Tariff,0.030,18467,15325,3142,5.3
-High Tariff,0.040,24622,17557,7065,4.2
+Tariff_BHD_kWh,ASHP_LCC_BHD,SA_GSHP_LCC_BHD,Annual_Savings_BHD,NPV_BHD,Simple_Payback_Years
+0.018,6661,11789,61,-5127,97.7
+0.025,7809,12652,81,-4843,73.7
+0.030,8629,13269,96,-4640,62.7
+0.040,10268,14502,124,-4234,48.3
 
-ECONOMIC INDICATORS
+BASE CASE INDICATORS @ 0.030 BHD/kWh
 Metric,Value,Unit,Interpretation
-Simple Payback Period,5.3,years,Time to recover initial investment
-Discounted Payback,6.1,years,Payback with time value of money
-Internal Rate of Return,18.7,%,Annual return on investment
-Net Present Value (0.030 BHD/kWh),3142,BHD,Positive investment value
-Benefit-Cost Ratio,1.21,-,Benefits exceed costs by 21%
+Simple Payback Period,62.7,years,Time to recover extra capital cost
+Net Present Value,-4640,BHD,Positive values indicate economic benefit
+Benefit-Cost Ratio,0.65,-,Values above 1 favor SA-GSHP

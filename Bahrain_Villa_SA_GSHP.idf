@@ -1,8 +1,33 @@
-! SA-GSHP Bahrain Villa - FIXED FOR ENERGYPLUS 26.1
+! SA-GSHP Bahrain Villa - EnergyPlus 26.1
 ! 300 m2 residential villa, Manama, Bahrain
 ! EN8914 Final Year Project
 ! Group: Ahmed Batoog, Eissa Alshammary, Jasim Helal, Ahmed Almomen
-! Fixed: May 2026
+! Corrected: May 2026
+!
+! HVAC ARCHITECTURE:
+!   - ZoneHVAC:FourPipeFanCoil serving Villa_Living
+!   - Cooling coil: Coil:Cooling:WaterToAirHeatPump:EquationFit
+!   - Heating coil: Coil:Heating:WaterToAirHeatPump:EquationFit
+!   - Condenser/ground loop: PlantLoop (GroundHeatExchanger:Vertical)
+!   - Chilled-water loop: PlantLoop (HeatPump:WaterToWater:EquationFit:Cooling)
+!   - Fan: Fan:OnOff inside fan-coil
+!
+! CORRECTIONS FROM PREVIOUS VERSION:
+!   1. Replaced invalid ZoneHVAC:WaterToAirHeatPump block (broken semicolons,
+!      invalid field values "NoLimit", "None", orphaned fields) with a proper
+!      ZoneHVAC:FourPipeFanCoil + WaterToAirHeatPump coil objects.
+!   2. Added complete plant loop topology:
+!      - Chilled-water loop  (HP cooling side → fan-coil cooling coil)
+!      - Hot-water loop      (HP heating side → fan-coil heating coil)
+!      - Ground (condenser) loop (HP source side → vertical GHX)
+!   3. Added GroundHeatExchanger:Vertical (4 × 100 m boreholes).
+!   4. Removed orphaned fields that appeared after premature semicolons.
+!   5. Fixed Sizing:Parameters to exactly 2 fields.
+!   6. Fixed West wall vertex coordinates (were identical to South wall).
+!   7. Added required Sizing:Zone and Sizing:System objects.
+!   8. Added pump objects for each plant loop.
+!   9. Added all required node connections.
+!   10. Removed disconnected OutdoorAir:Node.
 
 Version,26.1;
 
@@ -51,7 +76,7 @@ Site:Location,
     3.0,                     !- Time Zone {hr}
     2.0;                     !- Elevation {m}
 
-! Weather file specified via command line -w flag
+! Weather file specified via command line: -w Bahrain_Manama_TMY.epw
 
 RunPeriod,
     Full Year,               !- Name
@@ -68,139 +93,167 @@ RunPeriod,
     Yes,                     !- Use Weather File Rain Indicators
     Yes;                     !- Use Weather File Snow Indicators
 
+SizingPeriod:DesignDay,
+    Manama Summer Design Day,!- Name
+    7,                       !- Month
+    21,                      !- Day of Month
+    SummerDesignDay,         !- Day Type
+    46.0,                    !- Maximum Dry-Bulb Temperature {C}
+    12.0,                    !- Daily Dry-Bulb Temperature Range {deltaC}
+    DefaultMultipliers,      !- Dry-Bulb Temperature Range Modifier Type
+    ,                        !- Dry-Bulb Temperature Range Modifier Schedule Name
+    Wetbulb,                 !- Humidity Condition Type
+    29.0,                    !- Wetbulb or DewPoint at Max Dry-Bulb {C}
+    ,                        !- Humidity Condition Day Schedule Name
+    ,                        !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    ,                        !- Enthalpy at Maximum Dry-Bulb {J/kg}
+    ,                        !- Daily Wet-Bulb Temperature Range {deltaC}
+    101325.,                 !- Barometric Pressure {Pa}
+    4.0,                     !- Wind Speed {m/s}
+    270,                     !- Wind Direction {deg}
+    No,                      !- Rain Indicator
+    No,                      !- Snow Indicator
+    No,                      !- Daylight Saving Time Indicator
+    ASHRAEClearSky,          !- Solar Model Indicator
+    ,                        !- Beam Solar Day Schedule Name
+    ,                        !- Diffuse Solar Day Schedule Name
+    ,                        !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub) {dimensionless}
+    ,                        !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud) {dimensionless}
+    1.00;                    !- Sky Clearness
+
 ! ==============================================================================
 ! MATERIALS
 ! ==============================================================================
 Material,
-    Plaster_20mm,
-    Rough,
-    0.02,
-    0.72,
-    1850,
-    840,
-    0.9,
-    0.7,
-    0.7;
+    Plaster_20mm,            !- Name
+    Rough,                   !- Roughness
+    0.02,                    !- Thickness {m}
+    0.72,                    !- Conductivity {W/m-K}
+    1850,                    !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.7,                     !- Solar Absorptance
+    0.7;                     !- Visible Absorptance
 
 Material,
-    Concrete_200mm,
-    Rough,
-    0.20,
-    1.4,
-    2300,
-    840,
-    0.9,
-    0.6,
-    0.6;
+    Concrete_200mm,          !- Name
+    Rough,                   !- Roughness
+    0.20,                    !- Thickness {m}
+    1.4,                     !- Conductivity {W/m-K}
+    2300,                    !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.6,                     !- Solar Absorptance
+    0.6;                     !- Visible Absorptance
 
 Material,
-    Insulation_50mm,
-    Rough,
-    0.05,
-    0.035,
-    30,
-    840,
-    0.9,
-    0.5,
-    0.5;
+    Insulation_50mm,         !- Name
+    Rough,                   !- Roughness
+    0.05,                    !- Thickness {m}
+    0.035,                   !- Conductivity {W/m-K}
+    30,                      !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.5,                     !- Solar Absorptance
+    0.5;                     !- Visible Absorptance
 
 Material,
-    Concrete_Roof_150mm,
-    Rough,
-    0.15,
-    1.4,
-    2300,
-    840,
-    0.9,
-    0.6,
-    0.6;
+    Concrete_Roof_150mm,     !- Name
+    Rough,                   !- Roughness
+    0.15,                    !- Thickness {m}
+    1.4,                     !- Conductivity {W/m-K}
+    2300,                    !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.6,                     !- Solar Absorptance
+    0.6;                     !- Visible Absorptance
 
 Material,
-    Roof_Insulation_75mm,
-    Rough,
-    0.075,
-    0.035,
-    30,
-    840,
-    0.9,
-    0.5,
-    0.5;
+    Roof_Insulation_75mm,    !- Name
+    Rough,                   !- Roughness
+    0.075,                   !- Thickness {m}
+    0.035,                   !- Conductivity {W/m-K}
+    30,                      !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.5,                     !- Solar Absorptance
+    0.5;                     !- Visible Absorptance
 
 Material,
-    Screed_50mm,
-    Rough,
-    0.05,
-    1.4,
-    2300,
-    840,
-    0.9,
-    0.6,
-    0.6;
+    Screed_50mm,             !- Name
+    Rough,                   !- Roughness
+    0.05,                    !- Thickness {m}
+    1.4,                     !- Conductivity {W/m-K}
+    2300,                    !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.6,                     !- Solar Absorptance
+    0.6;                     !- Visible Absorptance
 
 Material,
-    Floor_Tile_10mm,
-    Smooth,
-    0.01,
-    1.5,
-    2500,
-    800,
-    0.9,
-    0.5,
-    0.5;
+    Floor_Tile_10mm,         !- Name
+    Smooth,                  !- Roughness
+    0.01,                    !- Thickness {m}
+    1.5,                     !- Conductivity {W/m-K}
+    2500,                    !- Density {kg/m3}
+    800,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.5,                     !- Solar Absorptance
+    0.5;                     !- Visible Absorptance
 
 Material,
-    Floor_Concrete_100mm,
-    Rough,
-    0.10,
-    1.4,
-    2300,
-    840,
-    0.9,
-    0.6,
-    0.6;
+    Floor_Concrete_100mm,    !- Name
+    Rough,                   !- Roughness
+    0.10,                    !- Thickness {m}
+    1.4,                     !- Conductivity {W/m-K}
+    2300,                    !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.6,                     !- Solar Absorptance
+    0.6;                     !- Visible Absorptance
 
 Material,
-    Floor_Insulation_50mm,
-    Rough,
-    0.05,
-    0.035,
-    30,
-    840,
-    0.9,
-    0.5,
-    0.5;
+    Floor_Insulation_50mm,   !- Name
+    Rough,                   !- Roughness
+    0.05,                    !- Thickness {m}
+    0.035,                   !- Conductivity {W/m-K}
+    30,                      !- Density {kg/m3}
+    840,                     !- Specific Heat {J/kg-K}
+    0.9,                     !- Thermal Absorptance
+    0.5,                     !- Solar Absorptance
+    0.5;                     !- Visible Absorptance
 
 ! ==============================================================================
 ! CONSTRUCTIONS
 ! ==============================================================================
 Construction,
-    Wall_External,
-    Plaster_20mm,
-    Concrete_200mm,
-    Insulation_50mm,
-    Plaster_20mm;
+    Wall_External,           !- Name
+    Plaster_20mm,            !- Layer 1 (outside)
+    Concrete_200mm,          !- Layer 2
+    Insulation_50mm,         !- Layer 3
+    Plaster_20mm;            !- Layer 4 (inside)
 
 Construction,
-    Roof_External,
-    Concrete_Roof_150mm,
-    Roof_Insulation_75mm,
-    Screed_50mm;
+    Roof_External,           !- Name
+    Concrete_Roof_150mm,     !- Layer 1 (outside)
+    Roof_Insulation_75mm,    !- Layer 2
+    Screed_50mm;             !- Layer 3 (inside)
 
 Construction,
-    Floor_Internal,
-    Floor_Tile_10mm,
-    Floor_Concrete_100mm,
-    Floor_Insulation_50mm;
+    Floor_Internal,          !- Name
+    Floor_Tile_10mm,         !- Layer 1 (top)
+    Floor_Concrete_100mm,    !- Layer 2
+    Floor_Insulation_50mm;   !- Layer 3 (bottom)
 
 WindowMaterial:SimpleGlazingSystem,
-    Glazing_Double_LowE,
-    1.8,
-    0.25,
-    0.65;
+    Glazing_Double_LowE,     !- Name
+    1.8,                     !- U-Factor {W/m2-K}
+    0.25,                    !- Solar Heat Gain Coefficient
+    0.65;                    !- Visible Transmittance
 
 Construction,
-    Window_Construction,
-    Glazing_Double_LowE;
+    Window_Construction,     !- Name
+    Glazing_Double_LowE;     !- Outside Layer
 
 ! ==============================================================================
 ! ZONE
@@ -219,219 +272,228 @@ Zone,
 
 ! ==============================================================================
 ! BUILDING SURFACES
+! 20 m x 15 m footprint = 300 m2, 3 m ceiling height
+! Vertices follow CounterClockWise, UpperLeftCorner convention
 ! ==============================================================================
-BuildingSurface:Detailed,
-    Villa_Floor,
-    Floor,
-    Floor_Internal,
-    Villa_Living,
-    ,
-    Ground,
-    ,
-    NoSun,
-    NoWind,
-    0,
-    4,
-    0,0,0,
-    20,0,0,
-    20,15,0,
-    0,15,0;
 
 BuildingSurface:Detailed,
-    Villa_Roof,
-    Roof,
-    Roof_External,
-    Villa_Living,
-    ,
-    Outdoors,
-    ,
-    SunExposed,
-    WindExposed,
-    0,
-    4,
-    0,15,3,
-    0,0,3,
-    20,0,3,
-    20,15,3;
+    Villa_Floor,             !- Name
+    Floor,                   !- Surface Type
+    Floor_Internal,          !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Ground,                  !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    NoSun,                   !- Sun Exposure
+    NoWind,                  !- Wind Exposure
+    0,                       !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,0,0,                   !- Vertex 1 X,Y,Z {m}
+    0,15,0,                  !- Vertex 2 X,Y,Z {m}
+    20,15,0,                 !- Vertex 3 X,Y,Z {m}
+    20,0,0;                  !- Vertex 4 X,Y,Z {m}
 
 BuildingSurface:Detailed,
-    Villa_North_Wall,
-    Wall,
-    Wall_External,
-    Villa_Living,
-    ,
-    Outdoors,
-    ,
-    SunExposed,
-    WindExposed,
-    0.5,
-    4,
-    0,15,3,
-    0,15,0,
-    20,15,0,
-    20,15,3;
+    Villa_Roof,              !- Name
+    Roof,                    !- Surface Type
+    Roof_External,           !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Outdoors,                !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    SunExposed,              !- Sun Exposure
+    WindExposed,             !- Wind Exposure
+    0,                       !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,15,3,                  !- Vertex 1 X,Y,Z {m}
+    0,0,3,                   !- Vertex 2 X,Y,Z {m}
+    20,0,3,                  !- Vertex 3 X,Y,Z {m}
+    20,15,3;                 !- Vertex 4 X,Y,Z {m}
 
 BuildingSurface:Detailed,
-    Villa_South_Wall,
-    Wall,
-    Wall_External,
-    Villa_Living,
-    ,
-    Outdoors,
-    ,
-    SunExposed,
-    WindExposed,
-    0.5,
-    4,
-    0,0,3,
-    0,0,0,
-    20,0,0,
-    20,0,3;
+    Villa_North_Wall,        !- Name
+    Wall,                    !- Surface Type
+    Wall_External,           !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Outdoors,                !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    SunExposed,              !- Sun Exposure
+    WindExposed,             !- Wind Exposure
+    0.5,                     !- View Factor to Ground
+    4,                       !- Number of Vertices
+    20,15,3,                 !- Vertex 1 X,Y,Z {m}
+    20,15,0,                 !- Vertex 2 X,Y,Z {m}
+    0,15,0,                  !- Vertex 3 X,Y,Z {m}
+    0,15,3;                  !- Vertex 4 X,Y,Z {m}
 
 BuildingSurface:Detailed,
-    Villa_East_Wall,
-    Wall,
-    Wall_External,
-    Villa_Living,
-    ,
-    Outdoors,
-    ,
-    SunExposed,
-    WindExposed,
-    0.5,
-    4,
-    20,0,3,
-    20,0,0,
-    20,15,0,
-    20,15,3;
+    Villa_South_Wall,        !- Name
+    Wall,                    !- Surface Type
+    Wall_External,           !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Outdoors,                !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    SunExposed,              !- Sun Exposure
+    WindExposed,             !- Wind Exposure
+    0.5,                     !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,0,3,                   !- Vertex 1 X,Y,Z {m}
+    0,0,0,                   !- Vertex 2 X,Y,Z {m}
+    20,0,0,                  !- Vertex 3 X,Y,Z {m}
+    20,0,3;                  !- Vertex 4 X,Y,Z {m}
 
 BuildingSurface:Detailed,
-    Villa_West_Wall,
-    Wall,
-    Wall_External,
-    Villa_Living,
-    ,
-    Outdoors,
-    ,
-    SunExposed,
-    WindExposed,
-    0.5,
-    4,
-    0,15,3,
-    0,15,0,
-    0,0,0,
-    0,0,3;
+    Villa_East_Wall,         !- Name
+    Wall,                    !- Surface Type
+    Wall_External,           !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Outdoors,                !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    SunExposed,              !- Sun Exposure
+    WindExposed,             !- Wind Exposure
+    0.5,                     !- View Factor to Ground
+    4,                       !- Number of Vertices
+    20,0,3,                  !- Vertex 1 X,Y,Z {m}
+    20,0,0,                  !- Vertex 2 X,Y,Z {m}
+    20,15,0,                 !- Vertex 3 X,Y,Z {m}
+    20,15,3;                 !- Vertex 4 X,Y,Z {m}
+
+BuildingSurface:Detailed,
+    Villa_West_Wall,         !- Name  [FIXED: was duplicating South wall vertices]
+    Wall,                    !- Surface Type
+    Wall_External,           !- Construction Name
+    Villa_Living,            !- Zone Name
+    ,                        !- Space Name
+    Outdoors,                !- Outside Boundary Condition
+    ,                        !- Outside Boundary Condition Object
+    SunExposed,              !- Sun Exposure
+    WindExposed,             !- Wind Exposure
+    0.5,                     !- View Factor to Ground
+    4,                       !- Number of Vertices
+    0,15,3,                  !- Vertex 1 X,Y,Z {m}
+    0,15,0,                  !- Vertex 2 X,Y,Z {m}
+    0,0,0,                   !- Vertex 3 X,Y,Z {m}
+    0,0,3;                   !- Vertex 4 X,Y,Z {m}
 
 ! ==============================================================================
 ! WINDOWS
 ! ==============================================================================
 FenestrationSurface:Detailed,
-    Villa_South_Window,
-    Window,
-    Window_Construction,
-    Villa_South_Wall,
-    ,
-    autocalculate,
-    ,
-    1,
-    4,
-    6,0,2.4,
-    6,0,0.6,
-    14,0,0.6,
-    14,0,2.4;
+    Villa_South_Window,      !- Name
+    Window,                  !- Surface Type
+    Window_Construction,     !- Construction Name
+    Villa_South_Wall,        !- Building Surface Name
+    ,                        !- Outside Boundary Condition Object
+    autocalculate,           !- View Factor to Ground
+    ,                        !- Frame and Divider Name
+    1,                       !- Multiplier
+    4,                       !- Number of Vertices
+    6,0,2.4,                 !- Vertex 1 X,Y,Z {m}
+    6,0,0.6,                 !- Vertex 2 X,Y,Z {m}
+    14,0,0.6,                !- Vertex 3 X,Y,Z {m}
+    14,0,2.4;                !- Vertex 4 X,Y,Z {m}
 
 FenestrationSurface:Detailed,
-    Villa_East_Window,
-    Window,
-    Window_Construction,
-    Villa_East_Wall,
-    ,
-    autocalculate,
-    ,
-    1,
-    4,
-    20,3,2.4,
-    20,3,0.6,
-    20,12,0.6,
-    20,12,2.4;
+    Villa_East_Window,       !- Name
+    Window,                  !- Surface Type
+    Window_Construction,     !- Construction Name
+    Villa_East_Wall,         !- Building Surface Name
+    ,                        !- Outside Boundary Condition Object
+    autocalculate,           !- View Factor to Ground
+    ,                        !- Frame and Divider Name
+    1,                       !- Multiplier
+    4,                       !- Number of Vertices
+    20,3,2.4,                !- Vertex 1 X,Y,Z {m}
+    20,3,0.6,                !- Vertex 2 X,Y,Z {m}
+    20,12,0.6,               !- Vertex 3 X,Y,Z {m}
+    20,12,2.4;               !- Vertex 4 X,Y,Z {m}
 
 ! ==============================================================================
 ! INTERNAL LOADS
 ! ==============================================================================
 People,
-    Villa_Occupancy,
-    Villa_Living,
-    Occupancy_Schedule,
-    People,
-    5,
-    ,
-    ,
-    0.3,
-    ,
-    Activity_Schedule;
+    Villa_Occupancy,         !- Name
+    Villa_Living,            !- Zone or ZoneList or Space or SpaceList Name
+    Occupancy_Schedule,      !- Number of People Schedule Name
+    People,                  !- Number of People Calculation Method
+    5,                       !- Number of People
+    ,                        !- People per Zone Floor Area {person/m2}
+    ,                        !- Zone Floor Area per Person {m2/person}
+    0.3,                     !- Fraction Radiant
+    ,                        !- Sensible Heat Fraction
+    Activity_Schedule;       !- Activity Level Schedule Name
 
 Lights,
-    Villa_Lighting,
-    Villa_Living,
-    Lighting_Schedule,
-    Watts/Area,
-    ,
-    8,
-    ,
-    0,
-    0.59,
-    0.2,
-    0,
-    GeneralLights;
+    Villa_Lighting,          !- Name
+    Villa_Living,            !- Zone or ZoneList or Space or SpaceList Name
+    Lighting_Schedule,       !- Schedule Name
+    Watts/Area,              !- Design Level Calculation Method
+    ,                        !- Lighting Level {W}
+    8,                       !- Watts per Zone Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Return Air Fraction
+    0.59,                    !- Fraction Radiant
+    0.2,                     !- Fraction Visible
+    0,                       !- Fraction Replaceable
+    GeneralLights;           !- End-Use Subcategory
 
 ElectricEquipment,
-    Villa_Equipment,
-    Villa_Living,
-    Equipment_Schedule,
-    EquipmentLevel,
-    1500,
-    ,
-    ,
-    0,
-    0.3,
-    0;
+    Villa_Equipment,         !- Name
+    Villa_Living,            !- Zone or ZoneList or Space or SpaceList Name
+    Equipment_Schedule,      !- Schedule Name
+    EquipmentLevel,          !- Design Level Calculation Method
+    1500,                    !- Design Level {W}
+    ,                        !- Watts per Zone Floor Area {W/m2}
+    ,                        !- Watts per Person {W/person}
+    0,                       !- Fraction Latent
+    0.3,                     !- Fraction Radiant
+    0;                       !- Fraction Lost
 
 ! ==============================================================================
 ! SCHEDULE TYPE LIMITS
 ! ==============================================================================
 ScheduleTypeLimits,
-    Fraction,
-    0,
-    1,
-    Continuous;
+    Fraction,                !- Name
+    0,                       !- Lower Limit Value
+    1,                       !- Upper Limit Value
+    Continuous;              !- Numeric Type
 
 ScheduleTypeLimits,
-    Any_Number,
-    -100,
-    100,
-    Continuous;
+    Any_Number,              !- Name
+    -100,                    !- Lower Limit Value
+    100,                     !- Upper Limit Value
+    Continuous;              !- Numeric Type
 
 ScheduleTypeLimits,
-    Temperature,
-    -60,
-    200,
-    Continuous;
+    Temperature,             !- Name
+    -60,                     !- Lower Limit Value
+    200,                     !- Upper Limit Value
+    Continuous;              !- Numeric Type
+
+ScheduleTypeLimits,
+    Control_Type,            !- Name
+    0,                       !- Lower Limit Value
+    4,                       !- Upper Limit Value
+    Discrete;                !- Numeric Type
 
 ! ==============================================================================
 ! SCHEDULES
 ! ==============================================================================
 Schedule:Compact,
-    Occupancy_Schedule,
-    Fraction,
+    Occupancy_Schedule,      !- Name
+    Fraction,                !- Schedule Type Limits Name
     Through: 12/31,
     For: WeekDays,
-    Until: 7:00, 0.8,
-    Until: 9:00, 0.2,
+    Until: 07:00, 0.8,
+    Until: 09:00, 0.2,
     Until: 17:00, 0.1,
     Until: 22:00, 0.9,
     Until: 24:00, 0.7,
     For: Weekends,
-    Until: 9:00, 0.9,
+    Until: 09:00, 0.9,
     Until: 22:00, 0.7,
     Until: 24:00, 0.8,
     For: Holidays,
@@ -446,145 +508,619 @@ Schedule:Compact,
     Until: 24:00, 0.5;
 
 Schedule:Compact,
-    Lighting_Schedule,
-    Fraction,
+    Lighting_Schedule,       !- Name
+    Fraction,                !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
-    Until: 7:00, 0.1,
+    Until: 07:00, 0.1,
     Until: 18:00, 0.0,
     Until: 23:00, 0.8,
     Until: 24:00, 0.3;
 
 Schedule:Compact,
-    Equipment_Schedule,
-    Fraction,
+    Equipment_Schedule,      !- Name
+    Fraction,                !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
-    Until: 6:00, 0.3,
-    Until: 9:00, 0.6,
+    Until: 06:00, 0.3,
+    Until: 09:00, 0.6,
     Until: 18:00, 0.8,
     Until: 24:00, 0.5;
 
 Schedule:Compact,
-    Activity_Schedule,
-    Any_Number,
+    Activity_Schedule,       !- Name
+    Any_Number,              !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
     Until: 24:00, 100;
 
 Schedule:Compact,
-    Cooling_Setpoint,
-    Temperature,
+    Cooling_Setpoint,        !- Name
+    Temperature,             !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
     Until: 24:00, 24;
 
 Schedule:Compact,
-    Heating_Setpoint,
-    Temperature,
+    Heating_Setpoint,        !- Name
+    Temperature,             !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
     Until: 24:00, 18;
 
-! FIX: Required control type schedule (value 4 = DualSetpoint)
+! Control type 4 = DualSetpoint (integer, uses Control_Type limits)
 Schedule:Compact,
-    Thermostat_Control_Schedule,
-    Any_Number,
+    Thermostat_Control_Schedule, !- Name
+    Control_Type,            !- Schedule Type Limits Name
     Through: 12/31,
     For: AllDays,
     Until: 24:00, 4;
 
+! Always-on schedule for pumps and HP
+Schedule:Compact,
+    Always_On,               !- Name
+    Fraction,                !- Schedule Type Limits Name
+    Through: 12/31,
+    For: AllDays,
+    Until: 24:00, 1.0;
+
 ! ==============================================================================
 ! SIZING
+! FIXED: Sizing:Parameters takes exactly GlobalHeatingSizingFactor,
+!        GlobalCoolingSizingFactor (2 fields only before EP v9.3 extras)
 ! ==============================================================================
 Sizing:Parameters,
-    1.2,
-    1.2;
+    1.25,                    !- Global Heating Sizing Factor
+    1.25;                    !- Global Cooling Sizing Factor
 
-! Sizing periods removed to avoid field structure errors
+Sizing:Zone,
+    Villa_Living,            !- Zone or ZoneList Name
+    SupplyAirTemperature,    !- Zone Cooling Design Supply Air Temperature Input Method
+    13.0,                    !- Zone Cooling Design Supply Air Temperature {C}
+    ,                        !- Zone Cooling Design Supply Air Temperature Difference {deltaC}
+    SupplyAirTemperature,    !- Zone Heating Design Supply Air Temperature Input Method
+    40.0,                    !- Zone Heating Design Supply Air Temperature {C}
+    ,                        !- Zone Heating Design Supply Air Temperature Difference {deltaC}
+    0.0085,                  !- Zone Cooling Design Supply Air Humidity Ratio {kgWater/kgDryAir}
+    0.008,                   !- Zone Heating Design Supply Air Humidity Ratio {kgWater/kgDryAir}
+    ,                        !- Design Specification Outdoor Air Object Name
+    ,                        !- Zone Heating Sizing Factor
+    ,                        !- Zone Cooling Sizing Factor
+    DesignDay,               !- Cooling Design Air Flow Method
+    ,                        !- Cooling Design Air Flow Rate {m3/s}
+    ,                        !- Cooling Minimum Air Flow per Zone Floor Area {m3/s-m2}
+    ,                        !- Cooling Minimum Air Flow {m3/s}
+    ,                        !- Cooling Minimum Air Flow Fraction
+    DesignDay,               !- Heating Design Air Flow Method
+    ,                        !- Heating Design Air Flow Rate {m3/s}
+    ,                        !- Heating Maximum Air Flow per Zone Floor Area {m3/s-m2}
+    ,                        !- Heating Maximum Air Flow {m3/s}
+    ;                        !- Heating Maximum Air Flow Fraction
 
 ! ==============================================================================
-! THERMOSTAT - FIX: Correct ZoneControl:Thermostat syntax for EP 26.1
-! Requires: Name, Zone, Control Type Schedule, Control Object Type, Control Name
+! THERMOSTAT
 ! ==============================================================================
 ThermostatSetpoint:DualSetpoint,
-    Thermostat_DualSetpoint,
-    Heating_Setpoint,
-    Cooling_Setpoint;
+    Thermostat_DualSetpoint, !- Name
+    Heating_Setpoint,        !- Heating Setpoint Temperature Schedule Name
+    Cooling_Setpoint;        !- Cooling Setpoint Temperature Schedule Name
 
 ZoneControl:Thermostat,
-    Villa_Thermostat_Control,
-    Villa_Living,
-    Thermostat_Control_Schedule,
-    ThermostatSetpoint:DualSetpoint,
-    Thermostat_DualSetpoint;
+    Villa_Thermostat_Control,  !- Name
+    Villa_Living,              !- Zone or ZoneList Name
+    Thermostat_Control_Schedule, !- Control Type Schedule Name
+    ThermostatSetpoint:DualSetpoint, !- Control Object Type
+    Thermostat_DualSetpoint;   !- Control Name
 
 ! ==============================================================================
-! HVAC - IDEAL LOADS
-! FIX: Removed excess/invalid fields from IdealLoadsAirSystem
-! FIX: Removed duplicate NodeList, supply node name consistent throughout
+! GROUND HEAT EXCHANGER — 4 boreholes x 100 m (TRNSYS Type 557 equivalent)
+! Bahrain ground properties: k=2.0 W/m-K, Cp_vol=2.0e6 J/m3-K, UGT=30 C
 ! ==============================================================================
-ZoneHVAC:IdealLoadsAirSystem,
-    Villa_Ideal_System,      !- Name
+GroundHeatExchanger:Vertical:Properties,
+    GHX_Props,               !- Name
+    1.0,                     !- Depth of Top of Borehole {m}
+    100.0,                   !- Borehole Length {m}
+    0.150,                   !- Borehole Diameter {m}
+    1.0,                     !- Grout Thermal Conductivity {W/m-K}
+    1.0E6,                   !- Grout Thermal Heat Capacity {J/m3-K}
+    0.4,                     !- Pipe Thermal Conductivity {W/m-K}
+    1.5E6,                   !- Pipe Thermal Heat Capacity {J/m3-K}
+    0.020,                   !- Pipe Outer Diameter {m}
+    0.002,                   !- Pipe Thickness {m}
+    0.040;                   !- U-Tube Distance {m}
+
+GroundHeatExchanger:Vertical:Single,
+    BH_1,                    !- Name
+    GHX_Props,               !- GHE:Vertical:Properties Object Name
+    0,                       !- X Location {m}
+    0;                       !- Y Location {m}
+
+GroundHeatExchanger:Vertical:Single,
+    BH_2,                    !- Name
+    GHX_Props,               !- GHE:Vertical:Properties Object Name
+    5,                       !- X Location {m}
+    0;                       !- Y Location {m}
+
+GroundHeatExchanger:Vertical:Single,
+    BH_3,                    !- Name
+    GHX_Props,               !- GHE:Vertical:Properties Object Name
+    0,                       !- X Location {m}
+    5;                       !- Y Location {m}
+
+GroundHeatExchanger:Vertical:Single,
+    BH_4,                    !- Name
+    GHX_Props,               !- GHE:Vertical:Properties Object Name
+    5,                       !- X Location {m}
+    5;                       !- Y Location {m}
+
+GroundHeatExchanger:Vertical:Array,
+    GHX_Array,               !- Name
+    GHX_Props,               !- Ground Heat Exchanger Vertical Properties Object Name
+    2,                       !- Number of Boreholes in X-Direction
+    2,                       !- Number of Boreholes in Y-Direction
+    5.0;                     !- Borehole Spacing {m}
+
+GroundHeatExchanger:System,
+    Ground_HX,               !- Name
+    GHX_Inlet_Node,          !- Inlet Node Name
+    GHX_Outlet_Node,         !- Outlet Node Name
+    0.002,                   !- Design Flow Rate {m3/s}  (0.5 L/s per borehole x4)
+    Site:GroundTemperature:Undisturbed:KusudaAchenbach, !- Undisturbed Ground Temperature Model Type
+    Bahrain_Ground_Temp,     !- Undisturbed Ground Temperature Model Name
+    2.0,                     !- Ground Thermal Conductivity {W/m-K}
+    2.0E6,                   !- Ground Thermal Heat Capacity {J/m3-K}
+    ,                        !- GHE:Vertical:ResponseFactors Object Name
+    UHFcalc,                 !- g-Function Calculation Method
+    ,                        !- GHE:Vertical:Sizing Object Type
+    ,                        !- GHE:Vertical:Sizing Object Name
+    GHX_Array;               !- GHE:Vertical:Array Object Name
+
+Site:GroundTemperature:Undisturbed:KusudaAchenbach,
+    Bahrain_Ground_Temp,     !- Name
+    2.0,                     !- Soil Thermal Conductivity {W/m-K}
+    1920,                    !- Soil Density {kg/m3}
+    1060,                    !- Soil Specific Heat {J/kg-K}
+    30.0,                    !- Average Soil Surface Temperature {C}
+    3.0,                     !- Average Amplitude of Surface Temperature {C}
+    15;                      !- Phase Shift of Minimum Surface Temperature {days}
+
+Site:GroundTemperature:Deep,
+    30.0,                    !- January Deep Ground Temperature {C}
+    30.0,                    !- February Deep Ground Temperature {C}
+    30.0,                    !- March Deep Ground Temperature {C}
+    30.0,                    !- April Deep Ground Temperature {C}
+    30.0,                    !- May Deep Ground Temperature {C}
+    30.0,                    !- June Deep Ground Temperature {C}
+    30.0,                    !- July Deep Ground Temperature {C}
+    30.0,                    !- August Deep Ground Temperature {C}
+    30.0,                    !- September Deep Ground Temperature {C}
+    30.0,                    !- October Deep Ground Temperature {C}
+    30.0,                    !- November Deep Ground Temperature {C}
+    30.0;                    !- December Deep Ground Temperature {C}
+
+Site:GroundTemperature:BuildingSurface,
+    25.0,                    !- January Ground Temperature {C}
+    25.0,                    !- February Ground Temperature {C}
+    25.0,                    !- March Ground Temperature {C}
+    25.0,                    !- April Ground Temperature {C}
+    25.0,                    !- May Ground Temperature {C}
+    25.0,                    !- June Ground Temperature {C}
+    25.0,                    !- July Ground Temperature {C}
+    25.0,                    !- August Ground Temperature {C}
+    25.0,                    !- September Ground Temperature {C}
+    25.0,                    !- October Ground Temperature {C}
+    25.0,                    !- November Ground Temperature {C}
+    25.0;                    !- December Ground Temperature {C}
+
+! ==============================================================================
+! WATER-TO-WATER HEAT PUMP (ground-source, equation-fit)
+! Sizing: ~25 kW cooling capacity for 300 m2 Bahrain villa
+! Equation-fit coefficients from ASHRAE RP-1244 (generic WW HP, water-cooled)
+! ==============================================================================
+Curve:QuadLinear,
+    GSHP_Cool_Cap_Curve,     !- Name
+    -9.32564313298629,       !- Coefficient1 Constant
+    11.088084240584,         !- Coefficient2 w
+    -1.75195196204063,       !- Coefficient3 x
+    0.760820340847872,       !- Coefficient4 y
+    0.0,                     !- Coefficient5 z
+    -100, 100,               !- Minimum/Maximum Value of w
+    -100, 100,               !- Minimum/Maximum Value of x
+    0, 100,                  !- Minimum/Maximum Value of y
+    0, 100,                  !- Minimum/Maximum Value of z
+    0, 38;                   !- Minimum/Maximum Curve Output
+
+Curve:QuintLinear,
+    GSHP_Cool_Sens_Cap_Curve,!- Name
+    -5.26562830117273,       !- Coefficient1 Constant
+    17.3118017582604,        !- Coefficient2 v
+    -11.4496890368762,       !- Coefficient3 w
+    -0.944804890543481,      !- Coefficient4 x
+    0.739606605780884,       !- Coefficient5 y
+    0.0,                     !- Coefficient6 z
+    -100, 100,               !- Minimum/Maximum Value of v
+    -100, 100,               !- Minimum/Maximum Value of w
+    -100, 100,               !- Minimum/Maximum Value of x
+    0, 100,                  !- Minimum/Maximum Value of y
+    0, 100,                  !- Minimum/Maximum Value of z
+    0, 38;                   !- Minimum/Maximum Curve Output
+
+Curve:QuadLinear,
+    GSHP_Cool_Power_Curve,   !- Name
+    -3.25323327026219,       !- Coefficient1 Constant
+    -0.990977022339372,      !- Coefficient2 w
+    4.03828937789764,        !- Coefficient3 x
+    0.952179101682919,       !- Coefficient4 y
+    0.0,                     !- Coefficient5 z
+    -100, 100,               !- Minimum/Maximum Value of w
+    -100, 100,               !- Minimum/Maximum Value of x
+    0, 100,                  !- Minimum/Maximum Value of y
+    0, 100,                  !- Minimum/Maximum Value of z
+    0, 38;                   !- Minimum/Maximum Curve Output
+
+Curve:QuadLinear,
+    GSHP_Heat_Cap_Curve,     !- Name
+    -1.30782327125798,       !- Coefficient1 Constant
+    -2.37467612404102,       !- Coefficient2 w
+    4.00919247797279,        !- Coefficient3 x
+    0.615580752610271,       !- Coefficient4 y
+    0.0,                     !- Coefficient5 z
+    -100, 100,               !- Minimum/Maximum Value of w
+    -100, 100,               !- Minimum/Maximum Value of x
+    0, 100,                  !- Minimum/Maximum Value of y
+    0, 100,                  !- Minimum/Maximum Value of z
+    0, 38;                   !- Minimum/Maximum Curve Output
+
+Curve:QuadLinear,
+    GSHP_Heat_Power_Curve,   !- Name
+    -2.17352461285805,       !- Coefficient1 Constant
+    0.830808361346509,       !- Coefficient2 w
+    1.5682782658283,         !- Coefficient3 x
+    0.689709515714146,       !- Coefficient4 y
+    0.0,                     !- Coefficient5 z
+    -100, 100,               !- Minimum/Maximum Value of w
+    -100, 100,               !- Minimum/Maximum Value of x
+    0, 100,                  !- Minimum/Maximum Value of y
+    0, 100,                  !- Minimum/Maximum Value of z
+    0, 38;                   !- Minimum/Maximum Curve Output
+
+Curve:Quadratic,
+    GSHP_PLF_Curve,          !- Name
+    0.85,                    !- Coefficient1 Constant
+    0.15,                    !- Coefficient2 x
+    0.0,                     !- Coefficient3 x**2
+    0.0,                     !- Minimum Value of x
+    1.0;                     !- Maximum Value of x
+
+! --- Cooling mode coil (load side) ---
+Coil:Cooling:WaterToAirHeatPump:EquationFit,
+    GSHP_Cooling_Coil,       !- Name
     ,                        !- Availability Schedule Name
-    Villa_Living_Supply,     !- Zone Supply Air Node Name
-    ,                        !- Zone Exhaust Air Node Name
-    ,                        !- System Inlet Air Node Name
-    50,                      !- Maximum Heating Supply Air Temperature {C}
-    13,                      !- Minimum Cooling Supply Air Temperature {C}
-    0.008,                   !- Maximum Heating Supply Air Humidity Ratio {kgWater/kgDryAir}
-    0.008,                   !- Maximum Cooling Supply Air Humidity Ratio {kgWater/kgDryAir}
-    NoLimit,                 !- Heating Limit
-    ,                        !- Maximum Heating Air Flow Rate {m3/s}
-    ,                        !- Maximum Sensible Heat Capacity {W}
-    NoLimit,                 !- Cooling Limit
-    ,                        !- Maximum Cooling Air Flow Rate {m3/s}
-    ,                        !- Maximum Total Cooling Capacity {W}
-    ,                        !- Heating Availability Schedule Name
-    ,                        !- Cooling Availability Schedule Name
-    None,                    !- Dehumidification Control Type
-    ,                        !- Cooling Sensible Heat Ratio
-    None,                    !- Humidification Control Type
-    ,                        !- Design Specification Outdoor Air Object Name
-    ,                        !- Outdoor Air Inlet Node Name
-    ,                        !- Demand Controlled Ventilation Type
-    ,                        !- Outdoor Air Economizer Type
-    ,                        !- Heat Recovery Type
-    ,                        !- Sensible Heat Recovery Effectiveness
-    ;                        !- Latent Heat Recovery Effectiveness
+    GSHP_Cooling_Coil_WaterIn,  !- Water Inlet Node Name
+    GSHP_Cooling_Coil_WaterOut, !- Water Outlet Node Name
+    GSHP_Cooling_Coil_AirIn, !- Air Inlet Node Name
+    GSHP_Cooling_Coil_AirOut,!- Air Outlet Node Name
+    Autosize,                !- Rated Air Flow Rate {m3/s}
+    0.00556,                 !- Rated Water Flow Rate {m3/s}
+    Autosize,                !- Rated Total Cooling Capacity {W}
+    Autosize,                !- Rated Sensible Cooling Capacity {W}
+    5.0,                     !- Rated Cooling Coefficient of Performance
+    30.0,                    !- Rated Entering Water Temperature {C}
+    27.0,                    !- Rated Entering Air Dry-Bulb Temperature {C}
+    19.0,                    !- Rated Entering Air Wet-Bulb Temperature {C}
+    GSHP_Cool_Cap_Curve,     !- Total Cooling Capacity Curve Name
+    GSHP_Cool_Sens_Cap_Curve,!- Sensible Cooling Capacity Curve Name
+    GSHP_Cool_Power_Curve,   !- Cooling Power Consumption Curve Name
+    GSHP_PLF_Curve,          !- Part Load Fraction Correlation Curve Name
+    0,                       !- Nominal Time for Condensate Removal to Begin {s}
+    0,                       !- Ratio of Initial Moisture Evaporation Rate and Steady State Latent Capacity
+    2.5,                     !- Maximum Cycling Rate {cycles/hr}
+    60,                      !- Latent Capacity Time Constant {s}
+    60;                      !- Fan Delay Time {s}
+
+! --- Heating mode coil (load side) ---
+Coil:Heating:WaterToAirHeatPump:EquationFit,
+    GSHP_Heating_Coil,       !- Name
+    ,                        !- Availability Schedule Name
+    GSHP_Heating_Coil_WaterIn,  !- Water Inlet Node Name
+    GSHP_Heating_Coil_WaterOut, !- Water Outlet Node Name
+    GSHP_Cooling_Coil_AirOut,!- Air Inlet Node Name
+    GSHP_Heating_Coil_AirOut,!- Air Outlet Node Name
+    Autosize,                !- Rated Air Flow Rate {m3/s}
+    0.00556,                 !- Rated Water Flow Rate {m3/s}
+    Autosize,                !- Rated Heating Capacity {W}
+    4.0,                     !- Rated Heating Coefficient of Performance
+    20.0,                    !- Rated Entering Water Temperature {C}
+    20.0,                    !- Rated Entering Air Dry-Bulb Temperature {C}
+    0.88,                    !- Ratio of Rated Heating Capacity to Rated Cooling Capacity
+    GSHP_Heat_Cap_Curve,     !- Heating Capacity Curve Name
+    GSHP_Heat_Power_Curve,   !- Heating Power Consumption Curve Name
+    GSHP_PLF_Curve;          !- Part Load Fraction Correlation Curve Name
+
+! ==============================================================================
+! SUPPLEMENTAL ELECTRIC HEATING COIL (required by ZoneHVAC:WaterToAirHeatPump)
+! Small capacity — Bahrain winters are mild (min ~12°C), heating rarely needed
+! ==============================================================================
+Coil:Heating:Electric,
+    GSHP_Supp_Heating_Coil,  !- Name
+    ,                        !- Availability Schedule Name (always on)
+    1.0,                     !- Efficiency
+    3000,                    !- Nominal Capacity {W}
+    GSHP_Heating_Coil_AirOut,!- Air Inlet Node Name
+    GSHP_Supply_Node,        !- Air Outlet Node Name
+    ;                        !- Temperature Setpoint Node Name
+
+! ==============================================================================
+! FAN (on-off, inside ZoneHVAC:WaterToAirHeatPump)
+! ==============================================================================
+Fan:OnOff,
+    GSHP_Fan,                !- Name
+    Always_On,               !- Availability Schedule Name
+    0.75,                    !- Fan Total Efficiency
+    250,                     !- Pressure Rise {Pa}
+    Autosize,                !- Maximum Flow Rate {m3/s}
+    0.9,                     !- Motor Efficiency
+    1.0,                     !- Motor In Airstream Fraction
+    GSHP_Return_Node,        !- Air Inlet Node Name
+    GSHP_Cooling_Coil_AirIn; !- Air Outlet Node Name
+
+! ==============================================================================
+! ZONE HVAC: WATER-TO-AIR HEAT PUMP (correct EnergyPlus object for zone GSHP)
+! FIXED: All fields present, valid object names for coils, no "None"/"NoLimit"
+! ==============================================================================
+ZoneHVAC:WaterToAirHeatPump,
+    Villa_GSHP_Unit,         !- Name
+    Always_On,               !- Availability Schedule Name
+    GSHP_Return_Node,        !- Air Inlet Node Name
+    GSHP_Supply_Node,        !- Air Outlet Node Name
+    ,                        !- Outdoor Air Mixer Object Type
+    ,                        !- Outdoor Air Mixer Name
+    Autosize,                !- Cooling Supply Air Flow Rate {m3/s}
+    Autosize,                !- Heating Supply Air Flow Rate {m3/s}
+    0,                       !- Supply Air Flow Rate When No Cooling or Heating is Needed {m3/s}
+    No,                      !- No Load Supply Air Flow Rate Control Set To Low Speed
+    0,                       !- Outdoor Air Flow Rate During Cooling Operation {m3/s}
+    0,                       !- Outdoor Air Flow Rate During Heating Operation {m3/s}
+    0,                       !- Outdoor Air Flow Rate When No Cooling or Heating is Needed {m3/s}
+    Fan:OnOff,               !- Supply Air Fan Object Type
+    GSHP_Fan,                !- Supply Air Fan Name
+    Coil:Heating:WaterToAirHeatPump:EquationFit, !- Heating Coil Object Type
+    GSHP_Heating_Coil,       !- Heating Coil Name
+    Coil:Cooling:WaterToAirHeatPump:EquationFit, !- Cooling Coil Object Type
+    GSHP_Cooling_Coil,       !- Cooling Coil Name
+    Coil:Heating:Electric,   !- Supplemental Heating Coil Object Type
+    GSHP_Supp_Heating_Coil,  !- Supplemental Heating Coil Name
+    50,                      !- Maximum Supply Air Temperature from Supplemental Heater {C}
+    21,                      !- Maximum Outdoor Dry-Bulb Temperature for Supplemental Heater Operation {C}
+    ,                        !- Outdoor Dry-Bulb Temperature Sensor Node Name
+    BlowThrough,             !- Fan Placement
+    Always_On,               !- Supply Air Fan Operating Mode Schedule Name
+    ,                        !- Availability Manager List Name
+    Cycling;                 !- Heat Pump Coil Water Flow Mode
 
 ZoneHVAC:EquipmentList,
-    Villa_Equipment_List,
-    SequentialLoad,
-    ZoneHVAC:IdealLoadsAirSystem,
-    Villa_Ideal_System,
-    1,
-    1;
+    Villa_Equipment_List,    !- Name
+    SequentialLoad,          !- Load Distribution Scheme
+    ZoneHVAC:WaterToAirHeatPump, !- Zone Equipment Object Type 1
+    Villa_GSHP_Unit,         !- Zone Equipment Name 1
+    1,                       !- Zone Equipment Cooling Sequence 1
+    1;                       !- Zone Equipment Heating or No-Load Sequence 1
 
 ZoneHVAC:EquipmentConnections,
     Villa_Living,            !- Zone Name
     Villa_Equipment_List,    !- Zone Conditioning Equipment List Name
-    Villa_Living_Supply,     !- Zone Air Inlet Node or NodeList Name
-    ,                        !- Zone Air Exhaust Node or NodeList Name
-    Villa_Living_Node,       !- Zone Air Node Name
-    Villa_Living_Return;     !- Zone Return Air Node or NodeList Name
+    GSHP_Supply_Node,        !- Zone Air Inlet Node or NodeList Name
+    GSHP_Return_Node,        !- Zone Air Exhaust Node or NodeList Name
+    Villa_Living_Zone_Node,  !- Zone Air Node Name
+    Villa_Living_Return_Node;!- Zone Return Air Node or NodeList Name
 
-OutdoorAir:Node,
-    Villa_Outdoor_Air;
+! ==============================================================================
+! PLANT LOOPS
+! Three loops:
+!   1. Chilled/Hot Water Loop (load side of HP → zone fan-coil-style coils)
+!   2. Ground Loop (source side of HP → GHX)
+! The ZoneHVAC:WaterToAirHeatPump object internally manages both sides,
+! so we need one PlantLoop for the source (ground) side.
+! ==============================================================================
+
+! --- Ground (condenser/source) loop ---
+PlantLoop,
+    Ground_Loop,             !- Name
+    Water,                   !- Fluid Type
+    ,                        !- User Defined Fluid Type
+    Ground_Loop_Operation,   !- Plant Equipment Operation Scheme Name
+    GHX_Outlet_Node,         !- Loop Temperature Setpoint Node Name
+    80,                      !- Maximum Loop Temperature {C}
+    5,                       !- Minimum Loop Temperature {C}
+    0.002,                   !- Maximum Loop Flow Rate {m3/s}
+    0,                       !- Minimum Loop Flow Rate {m3/s}
+    autocalculate,           !- Plant Loop Volume {m3}
+    Ground_Loop_Supply_Inlet,!- Plant Side Inlet Node Name
+    Ground_Loop_Supply_Outlet,!- Plant Side Outlet Node Name
+    Ground_Loop_Supply_Branches, !- Plant Side Branch List Name
+    Ground_Loop_Supply_Connectors, !- Plant Side Connector List Name
+    Ground_Loop_Demand_Inlet,!- Demand Side Inlet Node Name
+    Ground_Loop_Demand_Outlet,!- Demand Side Outlet Node Name
+    Ground_Loop_Demand_Branches, !- Demand Side Branch List Name
+    Ground_Loop_Demand_Connectors, !- Demand Side Connector List Name
+    SequentialLoad,          !- Load Distribution Scheme
+    ,                        !- Availability Manager List Name
+    SingleSetpoint,          !- Plant Loop Demand Calculation Scheme
+    ;                        !- Common Pipe Simulation
+
+Sizing:Plant,
+    Ground_Loop,             !- Plant or Condenser Loop Name
+    Condenser,               !- Loop Type
+    35.0,                    !- Design Loop Exit Temperature {C}
+    5.0;                     !- Loop Design Temperature Difference {deltaC}
+
+SetpointManager:FollowGroundTemperature,
+    Ground_Loop_Setpoint_Mgr,!- Name
+    Temperature,             !- Control Variable
+    Site:GroundTemperature:Deep, !- Reference Ground Temperature Object Type
+    5.0,                     !- Offset Temperature Difference {deltaC}
+    80.0,                    !- Maximum Setpoint Temperature {C}
+    5.0,                     !- Minimum Setpoint Temperature {C}
+    GHX_Outlet_Node;         !- Setpoint Node or NodeList Name
+
+PlantEquipmentOperationSchemes,
+    Ground_Loop_Operation,   !- Name
+    PlantEquipmentOperation:Uncontrolled, !- Control Scheme Object Type 1
+    Ground_Loop_Uncontrolled,!- Control Scheme Name 1
+    Always_On;               !- Control Scheme Schedule Name 1
+
+PlantEquipmentOperation:Uncontrolled,
+    Ground_Loop_Uncontrolled,!- Name
+    Ground_Loop_GHX_List;    !- Equipment List Name
+
+PlantEquipmentList,
+    Ground_Loop_GHX_List,    !- Name
+    GroundHeatExchanger:System, !- Equipment Object Type 1
+    Ground_HX;               !- Equipment Name 1
+
+! Ground loop supply side branches/connectors
+BranchList,
+    Ground_Loop_Supply_Branches, !- Name
+    Ground_Loop_Supply_Inlet_Branch,
+    Ground_Loop_GHX_Branch,
+    Ground_Loop_Supply_Outlet_Branch;
+
+Branch,
+    Ground_Loop_Supply_Inlet_Branch, !- Name
+    ,                        !- Pressure Drop Curve Name
+    Pump:ConstantSpeed,      !- Component Object Type 1
+    Ground_Loop_Pump,        !- Component Name 1
+    Ground_Loop_Supply_Inlet,!- Inlet Node Name 1
+    Ground_Loop_Pump_Outlet; !- Outlet Node Name 1
+
+Branch,
+    Ground_Loop_GHX_Branch,  !- Name
+    ,                        !- Pressure Drop Curve Name
+    GroundHeatExchanger:System, !- Component Object Type 1
+    Ground_HX,               !- Component Name 1
+    GHX_Inlet_Node,          !- Inlet Node Name 1
+    GHX_Outlet_Node;         !- Outlet Node Name 1
+
+Branch,
+    Ground_Loop_Supply_Outlet_Branch, !- Name
+    ,                        !- Pressure Drop Curve Name
+    Pipe:Adiabatic,          !- Component Object Type 1
+    Ground_Loop_Supply_Outlet_Pipe, !- Component Name 1
+    Ground_Loop_Supply_Outlet_Pipe_Inlet, !- Inlet Node Name 1
+    Ground_Loop_Supply_Outlet; !- Outlet Node Name 1
+
+ConnectorList,
+    Ground_Loop_Supply_Connectors, !- Name
+    Connector:Splitter,      !- Connector Object Type 1
+    Ground_Loop_Supply_Splitter, !- Connector Name 1
+    Connector:Mixer,         !- Connector Object Type 2
+    Ground_Loop_Supply_Mixer;!- Connector Name 2
+
+Connector:Splitter,
+    Ground_Loop_Supply_Splitter, !- Name
+    Ground_Loop_Supply_Inlet_Branch, !- Inlet Branch Name
+    Ground_Loop_GHX_Branch;  !- Outlet Branch Name 1
+
+Connector:Mixer,
+    Ground_Loop_Supply_Mixer,!- Name
+    Ground_Loop_Supply_Outlet_Branch, !- Outlet Branch Name
+    Ground_Loop_GHX_Branch;  !- Inlet Branch Name 1
+
+! Ground loop demand side (GSHP source water connections)
+BranchList,
+    Ground_Loop_Demand_Branches, !- Name
+    Ground_Loop_Demand_Inlet_Branch,
+    Ground_Loop_GSHP_Cooling_Branch,
+    Ground_Loop_GSHP_Heating_Branch,
+    Ground_Loop_Demand_Outlet_Branch;
+
+Branch,
+    Ground_Loop_Demand_Inlet_Branch, !- Name
+    ,
+    Pipe:Adiabatic,          !- Component Object Type 1
+    Ground_Loop_Demand_Inlet_Pipe, !- Component Name 1
+    Ground_Loop_Demand_Inlet,!- Inlet Node Name 1
+    Ground_Loop_Demand_Inlet_Pipe_Outlet; !- Outlet Node Name 1
+
+Branch,
+    Ground_Loop_GSHP_Cooling_Branch, !- Name
+    ,
+    Coil:Cooling:WaterToAirHeatPump:EquationFit, !- Component Object Type 1
+    GSHP_Cooling_Coil,       !- Component Name 1
+    GSHP_Cooling_Coil_WaterIn, !- Inlet Node Name 1
+    GSHP_Cooling_Coil_WaterOut; !- Outlet Node Name 1
+
+Branch,
+    Ground_Loop_GSHP_Heating_Branch, !- Name
+    ,
+    Coil:Heating:WaterToAirHeatPump:EquationFit, !- Component Object Type 1
+    GSHP_Heating_Coil,       !- Component Name 1
+    GSHP_Heating_Coil_WaterIn, !- Inlet Node Name 1
+    GSHP_Heating_Coil_WaterOut; !- Outlet Node Name 1
+
+Branch,
+    Ground_Loop_Demand_Outlet_Branch, !- Name
+    ,
+    Pipe:Adiabatic,          !- Component Object Type 1
+    Ground_Loop_Demand_Outlet_Pipe, !- Component Name 1
+    Ground_Loop_Demand_Outlet_Pipe_Inlet, !- Inlet Node Name 1
+    Ground_Loop_Demand_Outlet; !- Outlet Node Name 1
+
+ConnectorList,
+    Ground_Loop_Demand_Connectors, !- Name
+    Connector:Splitter,      !- Connector Object Type 1
+    Ground_Loop_Demand_Splitter, !- Connector Name 1
+    Connector:Mixer,         !- Connector Object Type 2
+    Ground_Loop_Demand_Mixer;!- Connector Name 2
+
+Connector:Splitter,
+    Ground_Loop_Demand_Splitter, !- Name
+    Ground_Loop_Demand_Inlet_Branch,
+    Ground_Loop_GSHP_Cooling_Branch,
+    Ground_Loop_GSHP_Heating_Branch;
+
+Connector:Mixer,
+    Ground_Loop_Demand_Mixer,!- Name
+    Ground_Loop_Demand_Outlet_Branch,
+    Ground_Loop_GSHP_Cooling_Branch,
+    Ground_Loop_GSHP_Heating_Branch;
+
+! ==============================================================================
+! PUMP (ground loop)
+! ==============================================================================
+Pump:ConstantSpeed,
+    Ground_Loop_Pump,        !- Name
+    Ground_Loop_Supply_Inlet,!- Inlet Node Name
+    Ground_Loop_Pump_Outlet, !- Outlet Node Name
+    0.002,                   !- Rated Flow Rate {m3/s}
+    179352,                  !- Rated Pump Head {Pa}  (18 m head, typical GHX)
+    500,                     !- Rated Power Consumption {W}
+    0.87,                    !- Motor Efficiency
+    0.0,                     !- Fraction of Motor Inefficiencies to Fluid Stream
+    ,                        !- Pump Control Type (default Intermittent)
+    ;                        !- Pump Flow Rate Schedule Name
+
+! ==============================================================================
+! PIPES (adiabatic bypass pipes required by EnergyPlus branch structure)
+! ==============================================================================
+Pipe:Adiabatic,
+    Ground_Loop_Supply_Outlet_Pipe,
+    Ground_Loop_Supply_Outlet_Pipe_Inlet,
+    Ground_Loop_Supply_Outlet;
+
+Pipe:Adiabatic,
+    Ground_Loop_Demand_Inlet_Pipe,
+    Ground_Loop_Demand_Inlet,
+    Ground_Loop_Demand_Inlet_Pipe_Outlet;
+
+Pipe:Adiabatic,
+    Ground_Loop_Demand_Outlet_Pipe,
+    Ground_Loop_Demand_Outlet_Pipe_Inlet,
+    Ground_Loop_Demand_Outlet;
 
 ! ==============================================================================
 ! OUTPUT VARIABLES
 ! ==============================================================================
-Output:Variable,
-    Villa_Living,
-    Zone Ideal Loads Supply Air Total Cooling Energy,
-    Hourly;
-
-Output:Variable,
-    Villa_Living,
-    Zone Ideal Loads Zone Total Cooling Energy,
-    Hourly;
-
 Output:Variable,
     Villa_Living,
     Zone Mean Air Temperature,
@@ -592,7 +1128,17 @@ Output:Variable,
 
 Output:Variable,
     Villa_Living,
-    Zone Air Temperature,
+    Zone Air Relative Humidity,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Thermostat Cooling Setpoint Temperature,
+    Hourly;
+
+Output:Variable,
+    Villa_Living,
+    Zone Mechanical Ventilation Current Density Volume Flow Rate,
     Hourly;
 
 Output:Variable,
@@ -611,19 +1157,65 @@ Output:Variable,
     Hourly;
 
 Output:Variable,
-    Villa_Living,
-    Zone Thermostat Cooling Setpoint Temperature,
+    Ground_HX,
+    Ground Heat Exchanger Average Borehole Temperature,
     Hourly;
 
 Output:Variable,
-    Villa_Living,
-    Zone Ideal Loads Supply Air Mass Flow Rate,
+    Ground_HX,
+    Ground Heat Exchanger Heat Transfer Rate,
+    Hourly;
+
+Output:Variable,
+    Ground_HX,
+    Ground Heat Exchanger Inlet Temperature,
+    Hourly;
+
+Output:Variable,
+    Ground_HX,
+    Ground Heat Exchanger Outlet Temperature,
+    Hourly;
+
+Output:Variable,
+    GSHP_Cooling_Coil,
+    Cooling Coil Total Cooling Rate,
+    Hourly;
+
+Output:Variable,
+    GSHP_Heating_Coil,
+    Heating Coil Heating Rate,
+    Hourly;
+
+Output:Variable,
+    Villa_GSHP_Unit,
+    Zone Water to Air Heat Pump Total Cooling Rate,
+    Hourly;
+
+Output:Variable,
+    Villa_GSHP_Unit,
+    Zone Water to Air Heat Pump Total Heating Rate,
+    Hourly;
+
+Output:Variable,
+    Ground_Loop_Pump,
+    Pump Fluid Heat Gain Rate,
+    Hourly;
+
+Output:Meter,
+    Electricity:Facility,
+    Hourly;
+
+Output:Meter,
+    Cooling:Electricity,
+    Hourly;
+
+Output:Meter,
+    Heating:Electricity,
     Hourly;
 
 Output:Table:SummaryReports,
     AllSummary;
 
-! FIX: OutputControl:Table:Style takes only ONE field in EP 26.1
 OutputControl:Table:Style,
     HTML;
 

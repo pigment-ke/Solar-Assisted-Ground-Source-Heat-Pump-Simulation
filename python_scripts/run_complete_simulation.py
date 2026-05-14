@@ -11,8 +11,8 @@ from datetime import datetime
 import io
 from contextlib import redirect_stdout, redirect_stderr
 import shutil
-import pkg_resources
 import importlib.util
+from importlib import metadata
 import numpy as np
 
 # Get the project root directory
@@ -49,11 +49,11 @@ def check_and_install_requirements():
         package_name = requirement.split('>=')[0].split('==')[0].strip()
         
         try:
-            pkg_resources.get_distribution(package_name)
-            log_verbose(f"✓ {package_name} already installed")
-        except pkg_resources.DistributionNotFound:
+            metadata.version(package_name)
+            log_verbose(f"OK {package_name} already installed")
+        except metadata.PackageNotFoundError:
             missing_packages.append(requirement.strip())
-            log_verbose(f"✗ {package_name} missing - will install", "WARNING")
+            log_verbose(f"MISSING {package_name} - will install", "WARNING")
     
     if missing_packages:
         log_verbose(f"Installing {len(missing_packages)} missing packages...")
@@ -62,7 +62,7 @@ def check_and_install_requirements():
                 log_verbose(f"Installing {package}...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package], 
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                log_verbose(f"✓ {package} installed successfully")
+                log_verbose(f"OK {package} installed successfully")
             log_verbose("All required packages installed successfully!")
             return True
         except subprocess.CalledProcessError as e:
@@ -81,7 +81,7 @@ def find_energyplus_path():
         result = subprocess.run(["energyplus", "--version"], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
-            log_verbose(f"✓ EnergyPlus found in PATH: {result.stdout.strip()}")
+            log_verbose(f"OK EnergyPlus found in PATH: {result.stdout.strip()}")
             return "energyplus"
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
         pass
@@ -130,7 +130,7 @@ def find_energyplus_path():
         if os.path.exists(path):
             energyplus_exe = os.path.join(path, executable_name)
             if os.path.exists(energyplus_exe):
-                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                log_verbose(f"OK EnergyPlus found at: {energyplus_exe}")
                 return energyplus_exe
     
     # Method 3: Search in platform-specific directories
@@ -144,7 +144,7 @@ def find_energyplus_path():
                             energyplus_path = os.path.join(prog_dir, item)
                             energyplus_exe = os.path.join(energyplus_path, "energyplus.exe")
                             if os.path.exists(energyplus_exe):
-                                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                                log_verbose(f"OK EnergyPlus found at: {energyplus_exe}")
                                 return energyplus_exe
         
         elif system == "darwin":
@@ -155,7 +155,7 @@ def find_energyplus_path():
                         energyplus_path = os.path.join(applications_dir, item)
                         energyplus_exe = os.path.join(energyplus_path, "energyplus")
                         if os.path.exists(energyplus_exe):
-                            log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                            log_verbose(f"OK EnergyPlus found at: {energyplus_exe}")
                             return energyplus_exe
         
         elif system == "linux":
@@ -167,7 +167,7 @@ def find_energyplus_path():
                             energyplus_path = os.path.join(search_dir, item)
                             energyplus_exe = os.path.join(energyplus_path, "energyplus")
                             if os.path.exists(energyplus_exe):
-                                log_verbose(f"✓ EnergyPlus found at: {energyplus_exe}")
+                                log_verbose(f"OK EnergyPlus found at: {energyplus_exe}")
                                 return energyplus_exe
                                 
     except Exception as e:
@@ -181,7 +181,89 @@ def convert_energyplus_output():
     log_verbose("Converting EnergyPlus output to hourly loads CSV...")
     
     html_file = os.path.join(output_dir, "eplustbl.htm")
+    eso_file = os.path.join(output_dir, "eplusout.eso")
     csv_file = os.path.join(project_root, "hourly_loads.csv")
+
+    if os.path.exists(eso_file):
+        try:
+            log_verbose("Reading hourly cooling loads from EnergyPlus ESO output...")
+            variable_map = {}
+            cooling_variable_id = None
+            cooling_priority = [
+                ("VILLA_GSHP_UNIT", "Zone Water to Air Heat Pump Total Cooling Rate"),
+                ("GSHP_COOLING_COIL", "Cooling Coil Total Cooling Rate"),
+            ]
+
+            with open(eso_file, "r", encoding="utf-8", errors="ignore") as f:
+                for raw_line in f:
+                    line = raw_line.strip()
+                    if line == "End of Data Dictionary":
+                        break
+                    parts = line.split(",", 3)
+                    if len(parts) < 4 or not parts[0].isdigit():
+                        continue
+                    var_id, _, key, description = parts
+                    variable_map[var_id] = (key.upper(), description)
+
+            for desired_key, desired_name in cooling_priority:
+                for var_id, (key, description) in variable_map.items():
+                    if key == desired_key and desired_name.upper() in description.upper():
+                        cooling_variable_id = var_id
+                        break
+                if cooling_variable_id:
+                    break
+
+            if cooling_variable_id:
+                cooling_data = []
+                active_environment = ""
+                in_dictionary = True
+
+                with open(eso_file, "r", encoding="utf-8", errors="ignore") as f:
+                    for raw_line in f:
+                        line = raw_line.strip()
+                        if not line:
+                            continue
+                        if in_dictionary:
+                            if line == "End of Data Dictionary":
+                                in_dictionary = False
+                            continue
+
+                        parts = line.split(",")
+                        if not parts:
+                            continue
+                        if parts[0] == "1" and len(parts) > 1:
+                            active_environment = parts[1].strip().upper()
+                            continue
+                        if parts[0] == cooling_variable_id and len(parts) > 1:
+                            if active_environment and "FULL YEAR" not in active_environment:
+                                continue
+                            cooling_data.append(max(float(parts[1]) / 1000.0, 0.0))
+
+                if len(cooling_data) >= 8760:
+                    cooling_data = cooling_data[:8760]
+
+                    import pandas as pd
+                    df = pd.DataFrame({
+                        'hour': range(8760),
+                        'cooling_kW': cooling_data
+                    })
+                    df.to_csv(csv_file, index=False)
+
+                    total_cooling = sum(cooling_data)
+                    peak_cooling = max(cooling_data)
+                    avg_cooling = np.mean(cooling_data)
+
+                    log_verbose(f"OK Created hourly_loads.csv from ESO variable {cooling_variable_id}")
+                    log_verbose(f"  Total annual cooling: {total_cooling:.0f} kWh")
+                    log_verbose(f"  Peak cooling load: {peak_cooling:.1f} kW")
+                    log_verbose(f"  Average cooling load: {avg_cooling:.1f} kW")
+                    return True
+
+                log_verbose(f"ESO cooling series had {len(cooling_data)} values, expected 8760", "WARNING")
+            else:
+                log_verbose("Could not find cooling-rate variable in ESO dictionary", "WARNING")
+        except Exception as e:
+            log_verbose(f"Error reading EnergyPlus ESO output: {e}", "WARNING")
     
     if not os.path.exists(html_file):
         log_verbose("EnergyPlus HTML output not found", "WARNING")
@@ -218,6 +300,18 @@ def convert_energyplus_output():
                     # Filter for reasonable cooling load values (0-50 kW range)
                     if 0 < value <= 50:
                         cooling_data.append(value)
+        
+        # Method 1.5: Look for heat pump cooling rate specifically
+        hp_cooling_pattern = r'Zone Air System Total Cooling Rate[^>]*>([\d.]+)'
+        hp_matches = re.findall(hp_cooling_pattern, content)
+        for match in hp_matches:
+            try:
+                value = float(match)
+                if 0 < value <= 50:
+                    cooling_data.append(value)
+                    log_verbose(f"Found heat pump cooling rate: {value} kW", "INFO")
+            except ValueError:
+                continue
         
         # Method 2: Look for specific EnergyPlus report variables
         if len(cooling_data) < 100:
@@ -264,7 +358,7 @@ def convert_energyplus_output():
                 # Scale to match EnergyPlus total energy
                 base_load = 25.0 * monthly_fractions[month] * diurnal
                 # Normalize to match EnergyPlus total
-                scaling_factor = total_energy_kwh / 70000.0  # 70000 is typical base
+                scaling_factor = total_energy_kwh / 28837.0  # current calibrated annual cooling base
                 cooling_load = base_load * scaling_factor
                 cooling_data.append(cooling_load)
             
@@ -309,7 +403,7 @@ def convert_energyplus_output():
         peak_cooling = max(cooling_data)
         avg_cooling = np.mean(cooling_data)
         
-        log_verbose(f"✓ Created hourly_loads.csv with {len(cooling_data)} hourly values")
+        log_verbose(f"OK Created hourly_loads.csv with {len(cooling_data)} hourly values")
         log_verbose(f"  Total annual cooling: {total_cooling:.0f} kWh")
         log_verbose(f"  Peak cooling load: {peak_cooling:.1f} kW")
         log_verbose(f"  Average cooling load: {avg_cooling:.1f} kW")
@@ -357,29 +451,44 @@ def run_energyplus():
         # Check if simulation was successful
         success_file = os.path.join(output_dir, "eplusout.end")
         if os.path.exists(success_file):
-            log_verbose("✓ EnergyPlus simulation completed successfully.")
+            log_verbose("OK EnergyPlus simulation completed successfully.")
             
             # Convert EnergyPlus output to CSV format for Python scripts
             if convert_energyplus_output():
-                log_verbose("✓ EnergyPlus output converted to hourly loads CSV")
+                log_verbose("OK EnergyPlus output converted to hourly loads CSV")
             else:
-                log_verbose("⚠ Could not convert EnergyPlus output, will use synthetic loads", "WARNING")
+                log_verbose("WARNING Could not convert EnergyPlus output, will use synthetic loads", "WARNING")
             
             # Extract building loads for Python simulation
             tbl_file = os.path.join(output_dir, "eplustbl.htm")
             if os.path.exists(tbl_file):
-                log_verbose(f"✓ Building loads available in: {tbl_file} (HTML format)")
+                log_verbose(f"OK Building loads available in: {tbl_file} (HTML format)")
                 return True
             else:
-                log_verbose("⚠ EnergyPlus output table not found, but simulation completed successfully.", "WARNING")
+                log_verbose("WARNING EnergyPlus output table not found, but simulation completed successfully.", "WARNING")
                 return True
         else:
-            log_verbose("✗ EnergyPlus simulation failed.", "ERROR")
+            log_verbose("ERROR EnergyPlus simulation failed.", "ERROR")
             return False
             
     except Exception as e:
-        log_verbose(f"✗ Failed to run EnergyPlus: {e}", "ERROR")
+        log_verbose(f"ERROR Failed to run EnergyPlus: {e}", "ERROR")
         return False
+
+def cleanup_old_logs(logs_dir):
+    """Remove all old log files, keeping only the latest one"""
+    try:
+        log_files = [f for f in os.listdir(logs_dir) if f.startswith("simulation_log_") and f.endswith(".txt")]
+        
+        if len(log_files) > 1:
+            # Sort by filename (which contains timestamp) and remove all but the latest
+            log_files_sorted = sorted(log_files)
+            for old_log in log_files_sorted[:-1]:  # Keep the last one
+                old_log_path = os.path.join(logs_dir, old_log)
+                os.remove(old_log_path)
+                log_verbose(f"Removed old log file: {old_log}")
+    except Exception as e:
+        log_verbose(f"Warning: Could not clean up old logs: {e}", "WARNING")
 
 def run_script(script_name):
     """Run a Python script and capture output"""
@@ -405,6 +514,9 @@ def main():
     # Setup logging - use portable paths
     log_verbose("Setting up directories and logging...")
     os.makedirs(results_dir, exist_ok=True)
+    
+    # Clean up old log files, keeping only the latest
+    cleanup_old_logs(results_dir)
     
     # Create log file with timestamp
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -434,6 +546,7 @@ def main():
         # List of scripts to run in order (hybrid simulation)
         simulation_steps = [
             ("EnergyPlus Building Simulation", run_energyplus),
+            ("hp_performance.py", "hp_performance.py"),
             ("sagshp_simulation.py", "sagshp_simulation.py"),
             ("borehole_sim.py", "borehole_sim.py"), 
             ("lcc_analysis.py", "lcc_analysis.py"),

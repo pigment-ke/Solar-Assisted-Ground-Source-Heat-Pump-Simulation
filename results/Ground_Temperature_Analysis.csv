@@ -1,35 +1,35 @@
 Ground Temperature Evolution Analysis - 20 Year Study
-Generated: May 6, 2026
+Generated: 2026-05-14 13:11:27
 Location: Manama, Bahrain
 
 Year,Temperature_With_Regeneration_C,Temperature_Without_Regeneration_C,Temperature_Drift_With_Regen_C,Temperature_Drift_Without_Regen_C
-1,30.08,30.42,+0.08,+0.42
-2,30.18,30.92,+0.18,+0.92
-3,30.24,31.23,+0.24,+1.23
-4,30.29,31.48,+0.29,+1.48
-5,30.33,31.70,+0.33,+1.70
-6,30.37,31.91,+0.37,+1.91
-7,30.40,32.10,+0.40,+2.10
-8,30.44,32.28,+0.44,+2.28
-9,30.47,32.45,+0.47,+2.45
-10,30.50,32.63,+0.50,+2.63
-11,30.53,32.79,+0.53,+2.79
-12,30.57,32.96,+0.57,+2.96
-13,30.60,33.12,+0.60,+3.12
+1,30.10,30.42,+0.10,+0.42
+2,30.20,30.92,+0.20,+0.92
+3,30.26,31.23,+0.26,+1.23
+4,30.31,31.48,+0.31,+1.48
+5,30.35,31.70,+0.35,+1.70
+6,30.39,31.91,+0.39,+1.91
+7,30.42,32.10,+0.42,+2.10
+8,30.45,32.28,+0.45,+2.28
+9,30.49,32.45,+0.49,+2.45
+10,30.52,32.63,+0.52,+2.63
+11,30.55,32.79,+0.55,+2.79
+12,30.58,32.96,+0.58,+2.96
+13,30.61,33.12,+0.61,+3.12
 14,30.63,33.28,+0.63,+3.28
 15,30.66,33.43,+0.66,+3.43
-16,30.68,33.59,+0.68,+3.59
-17,30.71,33.74,+0.71,+3.74
-18,30.74,33.90,+0.74,+3.90
+16,30.69,33.59,+0.69,+3.59
+17,30.72,33.74,+0.72,+3.74
+18,30.75,33.90,+0.75,+3.90
 19,30.77,34.05,+0.77,+4.05
 20,30.80,34.20,+0.80,+4.20
 
 ANALYSIS RESULTS
-Initial Ground Temperature,30.0°C
-Final Temperature (With Regeneration),30.8°C
-Final Temperature (Without Regeneration),34.2°C
-Total Drift (With Regeneration),+0.80°C
-Total Drift (Without Regeneration),+4.20°C
-Average Annual Drift (With Regeneration),+0.040°C/year
-Average Annual Drift (Without Regeneration),+0.210°C/year
+Initial Ground Temperature,30.0 C
+Final Temperature (With Regeneration),30.8 C
+Final Temperature (Without Regeneration),34.2 C
+Total Drift (With Regeneration),+0.80 C
+Total Drift (Without Regeneration),+4.20 C
+Average Annual Drift (With Regeneration),+0.040 C/year
+Average Annual Drift (Without Regeneration),+0.210 C/year
 Regeneration Effectiveness,81% reduction in temperature drift

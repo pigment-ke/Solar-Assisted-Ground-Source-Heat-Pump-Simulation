@@ -4,6 +4,7 @@ from scipy.interpolate import interp1d
 import warnings
 import os
 import sys
+from datetime import datetime
 
 # Get the project root directory
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,8 +29,8 @@ except FileNotFoundError:
         diurnal = 0.7 + 0.3 * np.sin(np.pi * (hour_of_day - 6) / 12)
         diurnal = max(0, diurnal)
         Q_building_kWh[h] = 25.0 * monthly_fractions[month] * diurnal
-    # Normalize synthetic profile to thesis annual cooling target.
-    Q_building_kWh *= 70000.0 / max(np.sum(Q_building_kWh), 1e-9)
+    # Normalize synthetic profile to the current EnergyPlus-calibrated annual cooling load.
+    Q_building_kWh *= 28837.0 / max(np.sum(Q_building_kWh), 1e-9)
 
 print(f"  Peak cooling load: {max(Q_building_kWh):.1f} kW")
 print(f"  Annual cooling energy: {sum(Q_building_kWh):.0f} kWh")
@@ -104,24 +105,32 @@ os.makedirs(results_dir, exist_ok=True)
 # 1. SCOP Performance Analysis
 scop_data = [
     ["SA-GSHP Performance Analysis - 20 Year Results"],
-    ["Generated: May 6, 2026"],
+    [f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"],
     [],
     ["Year", "Ground_Temperature_C", "HP_COP", "System_SCOP", "Cooling_Load_kWh", "HP_Electricity_kWh", "Pump_Electricity_kWh", "Total_Electricity_kWh"]
 ]
 
 for i in range(20):
-    year = i + 1
-    ground_temp = 30.0 + i * 0.04
-    scop_data.append([year, f"{ground_temp:.2f}", "6.0", "4.51", "70000", "11667", "3856", "15523"])
+    row = df_results.iloc[i]
+    scop_data.append([
+        int(row["year"]),
+        f"{row['T_ground_C']:.2f}",
+        f"{row['HP_COP']:.2f}",
+        f"{row['SCOP_system']:.2f}",
+        f"{row['Q_cooling_kWh']:.0f}",
+        f"{row['E_HP_kWh']:.0f}",
+        f"{row['E_pumps_kWh']:.0f}",
+        f"{row['E_total_kWh']:.0f}",
+    ])
 
 scop_data.extend([
     [],
     ["SUMMARY STATISTICS"],
-    ["Average SCOP", "4.51"],
-    ["Average COP", "6.00"],
-    ["Total Electricity (20 years)", "310460 kWh"],
-    ["Average Annual Electricity", "15523 kWh"],
-    ["Ground Temperature Drift", "+0.80°C"]
+    ["Average SCOP", f"{df_results['SCOP_system'].mean():.2f}"],
+    ["Average COP", f"{df_results['HP_COP'].mean():.2f}"],
+    ["Total Electricity (20 years)", f"{df_results['E_total_kWh'].sum():.0f} kWh"],
+    ["Average Annual Electricity", f"{df_results['E_total_kWh'].mean():.0f} kWh"],
+    ["Ground Temperature Drift", f"{df_results['T_ground_C'].iloc[-1] - df_results['T_ground_C'].iloc[0]:+.2f} C"]
 ])
 
 with open(os.path.join(results_dir, "SCOP_Performance_Analysis.csv"), "w") as f:

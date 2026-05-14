@@ -1,32 +1,32 @@
 Environmental Impact Assessment - SA-GSHP Systems
-Generated: May 6, 2026
+Generated: 2026-05-14 13:11:47
 Analysis Period: 25 years
 CO2 Emission Factor: 0.62 kg CO2/kWh (Bahrain electricity mix)
 
 ANNUAL ENVIRONMENTAL IMPACTS
-Metric,ASHP_System,SA-GSHP_System,Annual_Reduction,Reduction_Percentage
-Electricity Consumption,kWh/year,28000,15556,12444,44.4%
-CO2 Emissions,kg/year,17360,9645,7715,44.4%
-Water Consumption,m3/year,350000,210000,140000,40.0%
+Metric,Unit,ASHP_System,SA-GSHP_System,Annual_Reduction,Reduction_Percentage
+Electricity Consumption,kWh/year,11535,8679,2856,24.8%
+CO2 Emissions,kg/year,7152,5381,1771,24.8%
+Water Consumption,million litres/year,0.14,0.09,0.06,Cooling tower baseline range
 
 LIFECYCLE ENVIRONMENTAL IMPACTS (25 YEARS)
-Metric,ASHP_Total,SA-GSHP_Total,Net_Reduction,Equivalent_Benefit
-Total Electricity,kWh,700000,388900,311100,Powering 50 homes for 1 year
-Total CO2 Emissions,tonnes,434,241,173,Planting 8,000 trees
-Total Water Consumption,million litres,8.75,5.25,3.50,Annual use of 70 households
+Metric,Unit,ASHP_Total,SA-GSHP_Total,Net_Reduction,Note
+Total Electricity,kWh,288370,216975,71395,Based on EnergyPlus annual cooling
+Total CO2 Emissions,tonnes,179,135,24,Includes embodied CO2 adjustment
+Total Water Consumption,million litres,3.60,2.16,1.44,Cooling tower baseline range
 Embodied CO2,tonnes,5,25,-20,Manufacturing impact
 
 ENVIRONMENTAL BENEFITS BREAKDOWN
 Benefit Type,Annual_Value,25-Year_Value,Description
-CO2 Reduction,7.7 tonnes,173 tonnes,Cleaner air, climate protection
-Water Conservation,140,000 m3,3.5 million litres,Water security in Bahrain
-Reduced Air Pollution,Significant,Significant,Lower NOx, SOx emissions
+CO2 Reduction,1.8 tonnes,24 tonnes,Cleaner air, climate protection
+Water Conservation,0.06 million litres,1.44 million litres,Water security in Bahrain
+Reduced Air Pollution,Significant,Significant,Lower NOx and SOx emissions
 Noise Reduction,Significant,Significant,Quieter operation than ASHP
 
 SUSTAINABILITY METRICS
 Metric,Value,Target,Status
-Ground Temperature Drift,+0.80°C,<1.0°C,Sustainable
-System Efficiency (SCOP),4.51,>4.0,Excellent
-Energy Reduction,44.4%,>30%,Exceeds target
-CO2 Reduction,173 tonnes,>150 tonnes,Exceeds target
-Water Savings,40%,>25%,Exceeds target
+Ground Temperature Drift,+0.80 C,<1.0 C,Sustainable
+System Efficiency (SCOP),3.32,>3.0,Validated
+Energy Reduction,24.8%,>30%,Below target
+CO2 Reduction,24 tonnes,>0 tonnes,Positive
+Water Savings,1.44 million litres,>0,Positive

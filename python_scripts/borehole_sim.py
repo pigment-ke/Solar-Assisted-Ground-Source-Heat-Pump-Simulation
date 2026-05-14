@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import sys
+from datetime import datetime
 
 # Get the project root directory
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,8 +30,14 @@ dt = 3600 * 24 * 30
 n_steps = n_years * 12
 time = np.array([(i + 1) * dt for i in range(n_steps)])
 
-# Monthly load profile
-Q_cooling_month = 70000 / 7
+# Monthly load profile. Use the EnergyPlus-derived annual cooling load when available.
+hourly_loads_file = os.path.join(project_root, "hourly_loads.csv")
+if os.path.exists(hourly_loads_file):
+    annual_cooling_kWh = pd.read_csv(hourly_loads_file)["cooling_kW"].sum()
+else:
+    annual_cooling_kWh = 28837.0
+
+Q_cooling_month = annual_cooling_kWh / 7
 Q_solar_month = 5000
 
 monthly_W = []
@@ -94,7 +101,7 @@ print(f"Saved: {os.path.join(results_dir, 'ground_temp_20yr.csv')}")
 # Generate Excel-compatible ground temperature analysis
 ground_data = [
     ["Ground Temperature Evolution Analysis - 20 Year Study"],
-    ["Generated: May 6, 2026"],
+    [f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"],
     ["Location: Manama, Bahrain"],
     [],
     ["Year", "Temperature_With_Regeneration_C", "Temperature_Without_Regeneration_C", "Temperature_Drift_With_Regen_C", "Temperature_Drift_Without_Regen_C"]
@@ -110,13 +117,13 @@ for i, temp_with in enumerate(T_with):
 ground_data.extend([
     [],
     ["ANALYSIS RESULTS"],
-    ["Initial Ground Temperature", "30.0°C"],
-    ["Final Temperature (With Regeneration)", f"{T_with[-1]:.1f}°C"],
-    ["Final Temperature (Without Regeneration)", f"{T_without[-1]:.1f}°C"],
-    ["Total Drift (With Regeneration)", f"{T_with[-1] - 30.0:+.2f}°C"],
-    ["Total Drift (Without Regeneration)", f"{T_without[-1] - 30.0:+.2f}°C"],
-    ["Average Annual Drift (With Regeneration)", f"{(T_with[-1] - 30.0)/20:+.3f}°C/year"],
-    ["Average Annual Drift (Without Regeneration)", f"{(T_without[-1] - 30.0)/20:+.3f}°C/year"],
+    ["Initial Ground Temperature", "30.0 C"],
+    ["Final Temperature (With Regeneration)", f"{T_with[-1]:.1f} C"],
+    ["Final Temperature (Without Regeneration)", f"{T_without[-1]:.1f} C"],
+    ["Total Drift (With Regeneration)", f"{T_with[-1] - 30.0:+.2f} C"],
+    ["Total Drift (Without Regeneration)", f"{T_without[-1] - 30.0:+.2f} C"],
+    ["Average Annual Drift (With Regeneration)", f"{(T_with[-1] - 30.0)/20:+.3f} C/year"],
+    ["Average Annual Drift (Without Regeneration)", f"{(T_without[-1] - 30.0)/20:+.3f} C/year"],
     ["Regeneration Effectiveness", "81% reduction in temperature drift"]
 ])
 
